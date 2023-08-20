@@ -1,0 +1,8 @@
+{
+  "RpcUrl": "http://btctest.intoken.club",
+  "RpcTestnet": null,
+  "RpcUserName": "adu",
+  "RpcPassword": "xoNXu1WlPYU6hHTW",
+  "RpcTimeout": 60,
+  "WalletPassword": "xoNXu1WlPYU6hHTW"
+}

@@ -1,0 +1,30 @@
+﻿<#@ template debug="false" hostspecific="true" language="C#" #>
+
+<#@ assembly name="System.Core" #>
+<#@ assembly name="System.Data"#>
+<#@ assembly name="System.Reflection"#>
+<#@ assembly name="System.Reflection.TypeExtensions"#>
+<#@ assembly name="System.Configuration.ConfigurationManager"  #>
+<#@ assembly name="System.Resources.Extensions"  #>
+<#@ assembly name="System.Security.Permissions"  #>
+<#@ assembly name="System.Text.Encoding.CodePages"  #>
+
+<#@ assembly name="$(TargetDir)\BouncyCastle.NetCore"  #>
+<#@ assembly name="$(TargetDir)\Google.Protobuf"  #>
+<#@ assembly name="$(TargetDir)\SSH.NET"  #>
+<#@ assembly name="$(TargetDir)\MySql.Data"  #>
+
+
+<#@ import namespace="MySql.Data.MySqlClient" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Data" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Text" #>
+<#@ output extension=".txt" #>
+<#@ include file="$(ProjectDir)\DataBase\T4\DbHelper.ttinclude"  #>
+
+<# 
+    T4FileManager.GenerateORMEntity(this.Host.TemplateFile);
+#>

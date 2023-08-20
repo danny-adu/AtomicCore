@@ -1,0 +1,6 @@
+﻿{
+    "DLYS_MNKS": {
+        "connectionString": "Data Source=127.0.0.1,49527;Initial Catalog=DLYS_MNKS;User ID=sa;Password=123456",
+        "providerName": "Mssql2008"
+    }
+}

@@ -1,0 +1,50 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<TargetFramework>net7.0</TargetFramework>
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+		<Authors>th0646894062@gmail.com</Authors>
+		<Company>th0646894062@gmail.com</Company>
+		<Product>AtomicCore.IOStorage.StoragePort</Product>
+		<Description>AtomicCore.IOStorage.StoragePort,the static file storage site</Description>
+		<Copyright>Copyright 2019</Copyright>
+		<PackageProjectUrl>https://github.com/danny-adu/AtomicCore</PackageProjectUrl>
+		<PackageTags>AtomicCore.IOStorage.StoragePorts</PackageTags>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<UserSecretsId>41604144-212c-48be-9371-52e79d73e3aa</UserSecretsId>
+		<IsPackable>true</IsPackable>
+		<Version>1.4.1</Version>
+		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+		<AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<ServerGarbageCollection>false</ServerGarbageCollection>
+		<ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+		<RetainVMGarbageCollection>true</RetainVMGarbageCollection>
+		<ThreadPoolMinThreads>4</ThreadPoolMinThreads>
+		<ThreadPoolMaxThreads>25</ThreadPoolMaxThreads>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Google.Protobuf" Version="3.24.0" />
+		<PackageReference Include="Grpc.AspNetCore" Version="2.55.0" />
+		<PackageReference Include="Grpc.AspNetCore.Server.Reflection" Version="2.55.0" />
+		<PackageReference Include="Microsoft.AspNetCore.Antiforgery" Version="2.1.1" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="7.0.10" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="7.0.10" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="7.0.0" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="ZKWeb.System.Drawing" Version="4.0.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\AtomicCore.IOStorage.Core\AtomicCore.IOStorage.Core.csproj" />
+		<ProjectReference Include="..\AtomicCore\AtomicCore.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Protobuf Include="Protos\fileservice.proto" GrpcServices="Server" />
+	</ItemGroup>
+
+</Project>

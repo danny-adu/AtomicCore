@@ -1,0 +1,15 @@
+﻿using System;
+using AtomicCore.DbProvider;
+
+namespace {#global_namespace#}
+{
+    /// <summary>
+    /// {#tableDesc#}
+    /// </summary>
+	[DbDatabase(Name = "{#global_DbName#}")]
+    [DbTable(Name = "{#tableName#}")]
+	public class {#tableName#} : IDbModel
+	{
+		{#PropertyTemplate#}
+	}
+}

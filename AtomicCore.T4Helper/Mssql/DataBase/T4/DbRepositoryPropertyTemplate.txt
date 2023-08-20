@@ -1,0 +1,4 @@
+﻿        /// <summary>
+        /// {#tableDesc#}
+        /// </summary>
+		public static IDbProvider<{#tableName#}> {#tableName#} { get { return GetRepository<{#tableName#}>(); } }

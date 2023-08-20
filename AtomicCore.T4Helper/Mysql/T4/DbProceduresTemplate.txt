@@ -1,0 +1,54 @@
+﻿using AtomicCore;
+using AtomicCore.DbProvider;
+using AtomicCore.Integration.MssqlDbProvider;
+using System;
+using System.Data;
+
+namespace {#global_namespace#}
+{
+    /// <summary>
+    /// Db数据库存储过程调用入口
+    /// </summary>
+    public static class BizDbProcedures
+	{
+        #region Db Conn
+
+        /// <summary>
+        /// 参数名称
+        /// </summary>
+        private const string conn_paramName = "dbConnString";
+
+        /// <summary>
+        /// 数据库链接字符串 
+        /// </summary>
+        private static readonly string s_realConnString = string.Empty;
+
+        #endregion
+
+        #region Constructors
+
+        /// <summary>
+        /// 构造函数
+        /// </summary>
+        static BizDbProcedures()
+        {
+            IDecryptAlgorithm s_decrypt = AtomicKernel.Dependency.Resolve<IDecryptAlgorithm>(CryptoMethods.DES);
+            if (null == s_decrypt)
+                throw new NotImplementedException("IDecryptAlgorithm Instance is null");
+
+            var conn_conf1 = System.Configuration.ConfigurationManager.ConnectionStrings["{#global_DbName#}"];
+            if (null == conn_conf1 || string.IsNullOrEmpty(conn_conf1.ConnectionString))
+                throw new Exception("miss db connection string");
+
+            s_realConnString = s_decrypt.Decrypt(conn_conf1.ConnectionString);
+        }
+
+        #endregion
+
+		#region Proc Functions
+
+		{#procFunctions#}
+
+		#endregion
+	}
+}

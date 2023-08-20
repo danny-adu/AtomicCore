@@ -1,0 +1,6 @@
+{
+    "By_BlockChainPool_Standard": {
+        "connectionString": "Data Source=192.168.0.11,1433;Initial Catalog=By_BlockChainPool_Standard;User ID=sa;Password=123456",
+        "providerName": "Mssql2008"
+    }
+}

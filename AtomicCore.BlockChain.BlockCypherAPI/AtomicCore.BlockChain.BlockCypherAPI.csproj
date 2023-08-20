@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.1</TargetFramework>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<ProduceReferenceAssembly>False</ProduceReferenceAssembly>
+		<Description>https://www.blockcypher.com/dev/bitcoin/?shell#restful-resources</Description>
+		<Copyright>Copyright 2022</Copyright>
+		<Authors>th0646894062@gmail.com</Authors>
+		<PackageProjectUrl>https://github.com/danny-adu/AtomicCore</PackageProjectUrl>
+		<PackageTags>AtomicCore,BlockChain,Bitcoin,Dash,Dogecoin,Litecoin</PackageTags>
+		<Version>1.4.0</Version>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="7.0.0" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\AtomicCore\AtomicCore.csproj" />
+	</ItemGroup>
+
+</Project>

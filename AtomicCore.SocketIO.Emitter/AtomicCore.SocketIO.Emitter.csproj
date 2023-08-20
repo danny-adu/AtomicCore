@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.1</TargetFramework>
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+		<Description>Atomic for dotnet core socket io emitter</Description>
+		<Copyright>Copyright 2019</Copyright>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<Authors>th0646894062@gmail.com</Authors>
+		<PackageProjectUrl>https://github.com/danny-adu/AtomicCore</PackageProjectUrl>
+		<PackageTags>AtomicCore</PackageTags>
+		<Version>1.4.0</Version>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="MsgPack.Cli" Version="1.0.1" />
+		<PackageReference Include="StackExchange.Redis" Version="2.6.122" />
+	</ItemGroup>
+
+</Project>

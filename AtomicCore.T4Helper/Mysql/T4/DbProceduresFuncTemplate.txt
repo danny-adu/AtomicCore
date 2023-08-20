@@ -1,0 +1,16 @@
+﻿		public static DbCalculateRecord {#procName#}({#procParams#} bool hasReturns = true)
+		{
+            Mssql2008DbExecuteInput input = Mssql2008DbExecuteInput.Create();
+            input.CommandText = "{#procName#}";
+            input.CommandType = CommandType.StoredProcedure;
+            input.HasReturnRecords = hasReturns;//有无返回值
+
+			{#procParamInputs#}
+
+			IDbProcedurer dal = AtomicKernel.Dependency.Resolve<IDbProcedurer>(DatabaseType.Mssql2008, new System.Collections.Generic.KeyValuePair<string, object>(conn_paramName, s_realConnString));
+            DbCalculateRecord result = dal.Execute(input);
+
+			{#procParamOutputs#}
+
+            return result;
+		}
