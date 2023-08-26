@@ -204,7 +204,7 @@ namespace AtomicCore.Integration.MssqlDbProviderUnitTest
             List<DbProc> procList = new List<DbProc>();
 
             StringBuilder paramSqlBuilder = null;
-            foreach (var procName in procNameList)
+            foreach (var procName in procNameList.Where(d => !Regex.IsMatch(d, c_reg_suffix, RegexOptions.IgnoreCase)))
             {
                 paramSqlBuilder = new StringBuilder(string.Format(@"
                     select 
