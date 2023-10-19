@@ -9,7 +9,7 @@
 		<Authors>th0646894062@gmail.com</Authors>
 		<PackageProjectUrl>https://github.com/danny-adu/AtomicCore</PackageProjectUrl>
 		<PackageTags>tron, tron protocol, tron grpc</PackageTags>
-		<Version>1.5.0</Version>
+		<Version>1.5.1</Version>
 		<GenerateDocumentationFile>False</GenerateDocumentationFile>
 	</PropertyGroup>
 
