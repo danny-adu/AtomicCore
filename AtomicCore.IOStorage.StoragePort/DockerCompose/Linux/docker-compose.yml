@@ -1,0 +1,22 @@
+﻿version: '3.7'
+
+services:
+  
+  iostorage-server-1:
+    image: 0646894062/atomiccore.iostorage.storageport:ws
+    container_name: iostorage-server-1
+    privileged: true
+    environment:
+      - Logging__Console__FormatterName=""  
+      - IOSTORAGE_APPTOKEN=a6e2f27ee1f544cc889898e4397f7b07
+      - IOSTORAGE_SAVEROOTDIR=uploads
+      - IOSTORAGE_ALLOWFILEEXTS=".jpg,.jpeg,.gif,.xls,.xlsx,.doc,.docx,.ppt,.pptx,.wgt,.apk,.bmp,.png,.psd,.txt,.pdf"
+      - IOSTORAGE_ALLOWFILEMBSIZELIMIT=50
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./dataprotection:/app/DataProtection:rw
+      - ./uploads:/app/wwwroot/uploads:rw
+    ports:
+      - "8500:8500"
+      - "8600:8600/tcp"
+      - "8600:8600/udp"
