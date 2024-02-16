@@ -17,6 +17,5 @@ services:
       - ./dataprotection:/app/DataProtection:rw
       - ./uploads:/app/wwwroot/uploads:rw
     ports:
-      - "8500:8500"
-      - "8600:8600/tcp"
-      - "8600:8600/udp"
+      - "18777:80"
+      - "18778:50051"
