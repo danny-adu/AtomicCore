@@ -16,6 +16,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - ./dataprotection:/app/DataProtection:rw
       - ./uploads:/app/wwwroot/uploads:rw
+    user: "${UID}:${GID}"
     ports:
       - "18777:80"
       - "18778:50051"
