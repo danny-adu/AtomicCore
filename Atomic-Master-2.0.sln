@@ -65,6 +65,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AtomicCore.BlockChain.Bscsc
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AtomicCore.UnitTest", "AtomicCore.UnitTest\AtomicCore.UnitTest.csproj", "{A4E39AD1-20F3-4F64-AE16-6292D3852C9A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AtomicCore.Integration.ClickHouseDbProvider", "AtomicCore.Integration.ClickHouseDbProvider\AtomicCore.Integration.ClickHouseDbProvider.csproj", "{1AF9B2E8-8117-449B-8977-3B629CA9C0F1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -175,6 +177,10 @@ Global
 		{A4E39AD1-20F3-4F64-AE16-6292D3852C9A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A4E39AD1-20F3-4F64-AE16-6292D3852C9A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A4E39AD1-20F3-4F64-AE16-6292D3852C9A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1AF9B2E8-8117-449B-8977-3B629CA9C0F1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1AF9B2E8-8117-449B-8977-3B629CA9C0F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1AF9B2E8-8117-449B-8977-3B629CA9C0F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1AF9B2E8-8117-449B-8977-3B629CA9C0F1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -206,6 +212,7 @@ Global
 		{C26081AD-C830-4951-AA0B-093B17F81C97} = {5E75EB7D-DC21-47DF-9299-5D0F653D87C2}
 		{EF51876E-D82B-4900-B449-A4737520F9EF} = {35F57B42-FA48-4D50-8B93-C0C49BA67BD2}
 		{A4E39AD1-20F3-4F64-AE16-6292D3852C9A} = {35F57B42-FA48-4D50-8B93-C0C49BA67BD2}
+		{1AF9B2E8-8117-449B-8977-3B629CA9C0F1} = {AC8D0699-48E5-484C-A64D-052945EFC20F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {942DB662-B41D-4454-8FF9-2F118FA2B541}

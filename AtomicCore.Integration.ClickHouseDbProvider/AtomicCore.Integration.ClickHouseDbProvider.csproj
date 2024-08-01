@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.1</TargetFramework>
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+		<Description>dotnet core for click-house ORM</Description>
+		<Copyright>Copyright 2019</Copyright>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<Authors>th0646894062@gmail.com</Authors>
+		<PackageProjectUrl>https://github.com/danny-adu/AtomicCore</PackageProjectUrl>
+		<PackageTags>AtomicCore.Integration.ClickHouseDbProvider</PackageTags>
+		<Version>1.5.0</Version>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="ClickHouse.Client" Version="7.6.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\AtomicCore\AtomicCore.csproj" />
+	</ItemGroup>
+
+</Project>
