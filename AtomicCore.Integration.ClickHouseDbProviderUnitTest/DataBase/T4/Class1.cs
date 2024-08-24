@@ -75,20 +75,27 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
         {
             string sql = $@"             
                 SELECT 
-                    name AS view_name,
-                    engine AS view_engine
-                FROM system.tables
-                WHERE database = '{database}'
-                  AND (engine = 'View' OR engine = 'MaterializedView')
-                ORDER BY view_name;
+                        name, 
+                        engine, 
+                        partition_key
+                        sorting_key, 
+                        primary_key, 
+                        comment
+                FROM 
+                        system.tables
+                WHERE 
+                        database = '{database}' AND (engine = 'View' OR engine = 'MaterializedView')
+                ORDER BY name;
             ";
 
             DataTable dt = SqlInvoke(connectionString, sql);
             var view_list = dt.Rows.Cast<DataRow>().Select(row => new DbView
             {
-                ViewName = row.Field<string>("view_name"),
-                ViewDesc = row.Field<string>("view_name"),
-                ViewEngine = string.Empty
+                ViewName = row.Field<string>("name"),
+                ViewDesc = string.IsNullOrEmpty(row.Field<string>("comment")) ? row.Field<string>("name") : row.Field<string>("comment"),
+                ViewEngine = row.Field<string>("engine"),
+                HasPrimaryKey = !string.IsNullOrEmpty(row.Field<string>("primary_key")),
+                PrimaryKeyName = row.Field<string>("primary_key") ?? string.Empty
             }).ToList();
 
             return view_list.Where(d => !Regex.IsMatch(d.ViewName, c_reg_suffix, RegexOptions.IgnoreCase)).ToList();
@@ -314,6 +321,16 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
         /// View-Engine
         /// </summary>
         public string ViewEngine { get; set; }
+
+        /// <summary>
+        /// 是否含有主键
+        /// </summary>
+        public bool HasPrimaryKey { get; set; }
+
+        /// <summary>
+        /// 主键名称
+        /// </summary>
+        public string PrimaryKeyName { get; set; }
     }
 
     #endregion
