@@ -60,7 +60,7 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
                 TableName = row.Field<string>("name"),
                 TableDesc = string.IsNullOrEmpty(row.Field<string>("comment")) ? row.Field<string>("name") : row.Field<string>("comment"),
                 TableEngine = row.Field<string>("engine"),
-                HasPrimaryKey = !string.IsNullOrEmpty(row.Field<string>("table_pk")),
+                HasPrimaryKey = !string.IsNullOrEmpty(row.Field<string>("primary_key")),
                 PrimaryKeyName = row.Field<string>("primary_key") ?? string.Empty
             }).ToList();
 
@@ -71,13 +71,12 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
 
         #region GetDbViews
 
-        public static List<DbTable> GetDbViews(string connectionString, string database)
+        public static List<DbView> GetDbViews(string connectionString, string database)
         {
             string sql = $@"             
                 SELECT 
                     name AS view_name,
-                    engine AS view_type,
-                    create_table_query AS definition
+                    engine AS view_engine
                 FROM system.tables
                 WHERE database = '{database}'
                   AND (engine = 'View' OR engine = 'MaterializedView')
@@ -85,15 +84,14 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
             ";
 
             DataTable dt = SqlInvoke(connectionString, sql);
-            var view_list = dt.Rows.Cast<DataRow>().Select(row => new DbTable
+            var view_list = dt.Rows.Cast<DataRow>().Select(row => new DbView
             {
-                TableName = row.Field<string>("view_name"),
-                TableDesc = row.Field<string>("view_name"),
-                TableEngine = string.Empty,
-                HasPrimaryKey = false,
+                ViewName = row.Field<string>("view_name"),
+                ViewDesc = row.Field<string>("view_name"),
+                ViewEngine = string.Empty
             }).ToList();
 
-            return view_list.Where(d => !Regex.IsMatch(d.TableName, c_reg_suffix, RegexOptions.IgnoreCase)).ToList();
+            return view_list.Where(d => !Regex.IsMatch(d.ViewName, c_reg_suffix, RegexOptions.IgnoreCase)).ToList();
         }
 
         #endregion
@@ -295,6 +293,27 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
         /// 主键名称
         /// </summary>
         public string PrimaryKeyName { get; set; }
+    }
+
+    /// <summary>
+    /// View结构
+    /// </summary>
+    public sealed class DbView
+    {
+        /// <summary>
+        /// View名称
+        /// </summary>
+        public string ViewName { get; set; }
+
+        /// <summary>
+        /// View说明
+        /// </summary>
+        public string ViewDesc { get; set; }
+
+        /// <summary>
+        /// View-Engine
+        /// </summary>
+        public string ViewEngine { get; set; }
     }
 
     #endregion
@@ -749,17 +768,14 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
             string io_t4TempBasePath = t4_host_templateFile.Remove(t4_host_templateFile.LastIndexOf('\\') + 1);
 
             List<DbTable> tableList = DbHelper.GetDbTables(T4Config.global_ConnStr, T4Config.global_DbName);//获取表列表
-            List<DbTable> viewList = DbHelper.GetDbViews(T4Config.global_ConnStr, T4Config.global_DbName);//获取视图列表
+            List<DbView> viewList = DbHelper.GetDbViews(T4Config.global_ConnStr, T4Config.global_DbName);//获取视图列表
 
             //开始生成Model + View
             CreateModelFiles(tableList, io_t4TempBasePath, io_dataBaseDirPath);
             CreateViewFiles(viewList, io_t4TempBasePath, io_dataBaseDirPath);
 
             //创建仓储管理类
-            List<DbTable> TableViewList = new List<DbTable>();
-            TableViewList.AddRange(tableList);
-            TableViewList.AddRange(viewList);
-            CreateDbRepository(TableViewList, io_t4TempBasePath, io_dataBaseDirPath);
+            CreateDbRepository(tableList, viewList, io_t4TempBasePath, io_dataBaseDirPath);
 
             //执行生成存储过程
             List<DbProc> procList = DbHelper.GetProcList(T4Config.global_ConnStr, T4Config.global_DbName);//获取存储过程列表
@@ -858,7 +874,7 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
         /// <param name="viewList">视图列表</param>
         /// <param name="io_t4TempBasePath">t4模版的IO路径,结尾带'/'</param>
         /// <param name="io_dataBaseDirPath">Business程序集里的DataBase文件夹根路径,结尾带'/',生成新的文件的时候使用</param>
-        private static void CreateViewFiles(List<DbTable> viewList, string io_t4TempBasePath, string io_dataBaseDirPath)
+        private static void CreateViewFiles(List<DbView> viewList, string io_t4TempBasePath, string io_dataBaseDirPath)
         {
             //基础验证
             if (null == viewList || !viewList.Any() || string.IsNullOrEmpty(io_t4TempBasePath))
@@ -895,7 +911,7 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
             foreach (var tb_item in viewList)
             {
                 //获取该表的所有字段,若该表无字段,则跳出本轮循环
-                List<DbColumn> colList = DbHelper.GetDbColumns(T4Config.global_ConnStr, T4Config.global_DbName, tb_item.TableName);
+                List<DbColumn> colList = DbHelper.GetDbColumns(T4Config.global_ConnStr, T4Config.global_DbName, tb_item.ViewName);
                 if (null == colList || !colList.Any())
                     continue;
 
@@ -923,12 +939,12 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
                 tableBuilder = new StringBuilder(tmp_modelContent);
                 tableBuilder.Replace("{#global_namespace#}", T4Config.global_namespace);
                 tableBuilder.Replace("{#global_DbName#}", T4Config.global_DbName);
-                tableBuilder.Replace("{#tableName#}", tb_item.TableName);
-                tableBuilder.Replace("{#tableDesc#}", string.IsNullOrEmpty(tb_item.TableDesc) ? tb_item.TableName : tb_item.TableDesc);
+                tableBuilder.Replace("{#tableName#}", tb_item.ViewName);
+                tableBuilder.Replace("{#tableDesc#}", string.IsNullOrEmpty(tb_item.ViewDesc) ? tb_item.ViewName : tb_item.ViewDesc);
                 tableBuilder.Replace("{#PropertyTemplate#}", propBuilder.ToString());
 
                 //在指定位置保存文件
-                string io_savePath = string.Format("{0}{1}/{2}.cs", io_dataBaseDirPath, T4Config.global_viewSaveDir, tb_item.TableName);
+                string io_savePath = string.Format("{0}{1}/{2}.cs", io_dataBaseDirPath, T4Config.global_viewSaveDir, tb_item.ViewName);
                 byte[] io_saveByte = Encoding.UTF8.GetBytes(tableBuilder.ToString());
                 using (FileStream fs = new FileStream(io_savePath, FileMode.OpenOrCreate, FileAccess.ReadWrite))
                 {
@@ -944,10 +960,10 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
         /// <param name="tableViewList"></param>
         /// <param name="io_t4TempBasePath">t4模版的IO路径,结尾带'/'</param>
         /// <param name="io_dataBaseDirPath">Business程序集里的DataBase文件夹根路径,结尾带'/',生成新的文件的时候使用</param>
-        private static void CreateDbRepository(List<DbTable> tableViewList, string io_t4TempBasePath, string io_dataBaseDirPath)
+        private static void CreateDbRepository(List<DbTable> tableList, List<DbView> viewList, string io_t4TempBasePath, string io_dataBaseDirPath)
         {
             //基础验证
-            if (null == tableViewList || !tableViewList.Any() || string.IsNullOrEmpty(io_t4TempBasePath))
+            if (null == tableList || !tableList.Any() || string.IsNullOrEmpty(io_t4TempBasePath))
                 return;
 
             //拼接模版IO路径
@@ -971,15 +987,32 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
             }
 
             //开始循环所有表和视图开始构造DB数据访问静态属性
-            StringBuilder PropListBuilder = new StringBuilder();
-            StringBuilder eachPropBuilder = null;
-            foreach (var item in tableViewList)
-            {
-                eachPropBuilder = new StringBuilder(tmp_propContent);
-                eachPropBuilder.Replace("{#tableName#}", item.TableName);
-                eachPropBuilder.Replace("{#tableDesc#}", string.IsNullOrEmpty(item.TableDesc) ? item.TableName : item.TableDesc);
+            var PropListBuilder = new StringBuilder();
+            StringBuilder eachPropBuilder;
 
-                PropListBuilder.AppendLine(eachPropBuilder.ToString());
+            if (null != tableList)
+            {
+                foreach (var item in tableList)
+                {
+                    eachPropBuilder = new StringBuilder(tmp_propContent);
+                    eachPropBuilder.Replace("{#tableName#}", item.TableName);
+                    eachPropBuilder.Replace("{#tableDesc#}", string.IsNullOrEmpty(item.TableDesc) ? item.TableName : item.TableDesc);
+
+                    PropListBuilder.AppendLine(eachPropBuilder.ToString());
+                }
+            }
+
+            // 开始循环所有的视图
+            if (null != viewList)
+            {
+                foreach (var item in viewList)
+                {
+                    eachPropBuilder = new StringBuilder(tmp_propContent);
+                    eachPropBuilder.Replace("{#tableName#}", item.ViewName);
+                    eachPropBuilder.Replace("{#tableDesc#}", string.IsNullOrEmpty(item.ViewDesc) ? item.ViewName : item.ViewDesc);
+
+                    PropListBuilder.AppendLine(eachPropBuilder.ToString());
+                }
             }
 
             //开始初始化类
