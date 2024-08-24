@@ -36,7 +36,14 @@
         [TestMethod()]
         public void GenerateORMEntityTest()
         {
+            string rootPath = AppDomain.CurrentDomain.BaseDirectory;
+            int rm_idx = rootPath.LastIndexOf("bin");
+            rootPath = rootPath.Substring(0, rm_idx);
+            var tt = $"{rootPath}DataBase\\T4\\MssqlT4.tt";
 
+            T4FileManager.GenerateORMEntity(tt);
+
+            Assert.IsTrue(true);
         }
 
         #endregion
