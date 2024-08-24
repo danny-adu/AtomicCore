@@ -1,0 +1,33 @@
+﻿		public static DbProcedureRecord {#procName#}({#procParams#} bool hasReturns = true, string suffix = null)
+		{
+            var input = Mssql2008DbExecuteInput.Create();
+            input.CommandText = string.IsNullOrEmpty(suffix)? "{#procName#}":$"{#procName#}{suffix}";
+            input.CommandType = CommandType.StoredProcedure;
+            input.HasReturnRecords = hasReturns;//有无返回值
+
+			{#procParamInputs#}
+
+			IDbProcedurer dal = AtomicKernel.Dependency.Resolve<IDbProcedurer>(DatabaseType.Mssql2008, new System.Collections.Generic.KeyValuePair<string, object>(conn_paramName, s_realConnString));
+            var result = dal.Execute(input);
+
+			{#procParamOutputs#}
+
+            return result;
+		}
+
+		public static async Task<DbProcedureRecord> {#procName#}Async({#procAsyncParams#} bool hasReturns = true, string suffix = null)
+		{
+            var input = Mssql2008DbExecuteInput.Create();
+            input.CommandText = string.IsNullOrEmpty(suffix)? "{#procName#}":$"{#procName#}{suffix}";
+            input.CommandType = CommandType.StoredProcedure;
+            input.HasReturnRecords = hasReturns;//有无返回值
+
+			{#procParamInputs#}
+
+			IDbProcedurer dal = AtomicKernel.Dependency.Resolve<IDbProcedurer>(DatabaseType.Mssql2008, new System.Collections.Generic.KeyValuePair<string, object>(conn_paramName, s_realConnString));
+            var result = await dal.ExecuteAsync(input);
+
+			{#procAsyncParamOutputs#}
+
+            return result;
+		}
