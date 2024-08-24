@@ -3,6 +3,8 @@
     [TestClass()]
     public class DbHelperTests
     {
+        #region DbHelper
+
         [TestMethod()]
         public void GetDbTablesTest()
         {
@@ -26,5 +28,17 @@
 
             Assert.IsTrue(null != cols);
         }
+
+        #endregion
+
+        #region T4FileManager
+
+        [TestMethod()]
+        public void GenerateORMEntityTest()
+        {
+
+        }
+
+        #endregion
     }
 }
