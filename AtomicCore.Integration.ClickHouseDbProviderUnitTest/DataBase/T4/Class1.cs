@@ -3,6 +3,7 @@ using System.Data;
 using System.Data.Common;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
 namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
 {
@@ -109,39 +110,43 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
         {
             string sql = $@"
                 SELECT 
-                    name AS column_name,
-                    type AS data_type,
-                    position AS ordinal_position,
-                    default_expression AS default_value,
-                    NULL AS is_nullable,
-                    NULL AS column_size,
-                    NULL AS numeric_precision,
-                    NULL AS numeric_scale,
-                    -- 如果 ClickHouse 中没有这些信息，需要在 C# 代码中处理
-                    '' AS primary_key,       -- Placeholder for primary key information
-                    '' AS is_identity,       -- Placeholder for identity (auto-increment) information
-                    '' AS byte_length,       -- Placeholder for byte length
-                    '' AS char_length,       -- Placeholder for char length
-                    '' AS scale,             -- Placeholder for scale
-                    '' AS remark             -- Placeholder for remarks
-                FROM system.columns
-                WHERE database = '{database}' AND table = '{table_or_view}'
+                        position,
+                        name,
+                        type,
+                        default_kind,
+                        default_expression,
+                        data_compressed_bytes,
+                        data_uncompressed_bytes,
+                        marks_bytes,
+                        comment,
+                        is_in_partition_key,
+                        is_in_sorting_key,
+                        is_in_primary_key,
+                        is_in_sampling_key,
+                        type LIKE 'Nullable%' AS is_nullable,
+                        compression_codec, 
+                        character_octet_length, 
+                        numeric_precision, 
+                        numeric_precision_radix, 
+                        numeric_scale, 
+                        datetime_precision
+                FROM 
+                        system.columns
+                WHERE 
+                        database = '{database}' AND table = '{table_or_view}'
                 ORDER BY position;
             ";
 
             DataTable dt = SqlInvoke(connectionString, sql);
             return dt.Rows.Cast<DataRow>().Select(row => new DbColumn()
             {
-                ColumnID = row.Field<int>("ordinal_position"),  // Assuming ordinal_position as ColumnID
-                IsPrimaryKey = false, // ClickHouse doesn't have direct primary key info, needs manual assignment
-                ColumnName = row.Field<string>("column_name"),
-                ColumnType = row.Field<string>("data_type"),
+                ColumnID = (int)row.Field<ulong>("position"),  // Assuming ordinal_position as ColumnID
+                ColumnName = row.Field<string>("name"),
+                ColumnType = row.Field<string>("type"),
+                IsPrimaryKey = row.Field<byte>("is_in_primary_key") == 1, 
                 IsIdentity = false, // ClickHouse doesn't have auto-increment, so this is generally false
-                IsNullable = row["is_nullable"] != DBNull.Value && (bool)row["is_nullable"],
-                ByteLength = row["column_size"] != DBNull.Value ? Convert.ToInt32(row["column_size"]) : 0,
-                CharLength = row["char_length"] != DBNull.Value ? Convert.ToInt32(row["char_length"]) : 0,
-                Scale = row["scale"] != DBNull.Value ? Convert.ToInt32(row["scale"]) : 0,
-                Remark = row["remark"]?.ToString() ?? string.Empty
+                IsNullable = row.Field<byte>("is_nullable") == 1,
+                Remark = row.Field<string>("comment") ?? string.Empty
             }).ToList();
         }
 
@@ -348,11 +353,6 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
         public int ColumnID { get; set; }
 
         /// <summary>
-        /// 是否主键
-        /// </summary>
-        public bool IsPrimaryKey { get; set; }
-
-        /// <summary>
         /// 字段名称
         /// </summary>
         public string ColumnName { get; set; }
@@ -363,52 +363,9 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
         public string ColumnType { get; set; }
 
         /// <summary>
-        /// 数据库类型对应的C#类型
+        /// 是否主键
         /// </summary>
-        public string CSharpType
-        {
-            get
-            {
-                return SqlServerDbTypeMap.MapCsharpType(ColumnType);
-            }
-        }
-
-        /// <summary>
-        /// 数据库类型对应的C#类型默认值
-        /// </summary>
-        public string CSharpDefVal
-        {
-            get
-            {
-                return SqlServerDbTypeMap.MapCsharpDefVal(ColumnType);
-            }
-        }
-
-        /// <summary>
-        /// 公共类型
-        /// </summary>
-        public string CommonType
-        {
-            get
-            {
-                return SqlServerDbTypeMap.MapCommonType(ColumnType);
-            }
-        }
-
-        /// <summary>
-        /// 字节长度
-        /// </summary>
-        public int ByteLength { get; set; }
-
-        /// <summary>
-        /// 字符长度
-        /// </summary>
-        public int CharLength { get; set; }
-
-        /// <summary>
-        /// 小数位
-        /// </summary>
-        public int Scale { get; set; }
+        public bool IsPrimaryKey { get; set; }
 
         /// <summary>
         /// 是否自增列
@@ -424,19 +381,37 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
         /// 描述
         /// </summary>
         public string Remark { get; set; }
-        public string SetupLength()
+
+        /// <summary>
+        /// 数据库类型对应的C#类型 # ReadOnly
+        /// </summary>
+        public string CSharpType
         {
-            switch (this.ColumnType)
+            get
             {
-                case "binary":
-                case "char":
-                case "nchar":
-                case "nvarchar":
-                case "varbinary":
-                case "varchar":
-                    return CharLength.ToString();
-                default:
-                    return "";
+                return SqlServerDbTypeMap.MapCsharpType(ColumnType);
+            }
+        }
+
+        /// <summary>
+        /// 数据库类型对应的C#类型默认值 # ReadOnly
+        /// </summary>
+        public string CSharpDefVal
+        {
+            get
+            {
+                return SqlServerDbTypeMap.MapCsharpDefVal(ColumnType);
+            }
+        }
+
+        /// <summary>
+        /// 公共类型 # ReadOnly
+        /// </summary>
+        public string CommonType
+        {
+            get
+            {
+                return SqlServerDbTypeMap.MapCommonType(ColumnType);
             }
         }
     }

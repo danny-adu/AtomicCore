@@ -18,5 +18,13 @@
 
             Assert.IsTrue(null != tbs);
         }
+
+        [TestMethod()]
+        public void GetDbColumnsTest()
+        {
+            var cols = DbHelper.GetDbColumns(T4Config.global_ConnStr, T4Config.global_DbName, "Member_UserBasics");
+
+            Assert.IsTrue(null != cols);
+        }
     }
 }
