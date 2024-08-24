@@ -846,6 +846,14 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
                 if (null == colList || !colList.Any())
                     continue;
 
+                // 指定当前主键
+                if (tb_item.HasPrimaryKey)
+                {
+                    var pk = colList.FirstOrDefault(d => d.ColumnName == tb_item.PrimaryKeyName);
+                    if (null != pk)
+                        pk.IsPrimaryKey = true;
+                }
+
                 //循环字段开始优先构造属性部分
                 StringBuilder propBuilder = new StringBuilder();
                 StringBuilder piBuilder = null;
@@ -931,6 +939,14 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
                 List<DbColumn> colList = DbHelper.GetDbColumns(T4Config.global_ConnStr, T4Config.global_DbName, tb_item.ViewName);
                 if (null == colList || !colList.Any())
                     continue;
+
+                // 指定当前主键
+                if (tb_item.HasPrimaryKey)
+                {
+                    var pk = colList.FirstOrDefault(d => d.ColumnName == tb_item.PrimaryKeyName);
+                    if (null != pk)
+                        pk.IsPrimaryKey = true;
+                }
 
                 //循环字段开始优先构造属性部分
                 StringBuilder propBuilder = new StringBuilder();
