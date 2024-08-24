@@ -1,0 +1,11 @@
+﻿CREATE TABLE default.Member_UserBasics 
+(
+	`UserID` Int32,
+	`UserName` String,
+	`UserAge` Int32,
+	`UserIsBlock` UInt8,
+	`UserCreateAt` DateTime
+) 
+ENGINE = MergeTree
+ORDER BY UserID 
+COMMENT '用户基础信息表'

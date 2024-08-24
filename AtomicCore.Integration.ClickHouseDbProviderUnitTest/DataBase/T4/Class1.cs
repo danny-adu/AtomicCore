@@ -43,26 +43,25 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
         public static List<DbTable> GetDbTables(string connectionString, string database)
         {
             string sql = @$"
-                SELECT
-                    name AS table_name,
-                    engine,
-                    total_rows AS rows,
-                    total_bytes,
-                    metadata_modification_time AS last_modified
-                FROM system.tables
-                WHERE database = '{database}'
-                ORDER BY table_name;
+                SELECT 
+                        name, 
+                        engine, 
+                        partition_key
+                        sorting_key, 
+                        primary_key, 
+                        comment
+                FROM 
+                        system.tables WHERE database = '{database}' ORDER BY `name` ASC
             ";
 
             DataTable dt = SqlInvoke(connectionString, sql);
             var tb_list = dt.Rows.Cast<DataRow>().Select(row => new DbTable
             {
-                TableName = row.Field<string>("table_name"),
-                TableDesc = row.Field<string>("table_name"),
-                SchemaName = string.Empty,
-                Rows = row.Field<int>("rows"),
-                HasPrimaryKey = true,
-                IsDbView = false
+                TableName = row.Field<string>("name"),
+                TableDesc = string.IsNullOrEmpty(row.Field<string>("comment")) ? row.Field<string>("name") : row.Field<string>("comment"),
+                TableEngine = row.Field<string>("engine"),
+                HasPrimaryKey = !string.IsNullOrEmpty(row.Field<string>("table_pk")),
+                PrimaryKeyName = row.Field<string>("primary_key") ?? string.Empty
             }).ToList();
 
             return tb_list.Where(d => !Regex.IsMatch(d.TableName, c_reg_suffix, RegexOptions.IgnoreCase)).ToList();
@@ -90,10 +89,8 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
             {
                 TableName = row.Field<string>("view_name"),
                 TableDesc = row.Field<string>("view_name"),
-                SchemaName = string.Empty,
-                Rows = 0,
+                TableEngine = string.Empty,
                 HasPrimaryKey = false,
-                IsDbView = true
             }).ToList();
 
             return view_list.Where(d => !Regex.IsMatch(d.TableName, c_reg_suffix, RegexOptions.IgnoreCase)).ToList();
@@ -233,6 +230,7 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
 
             using (var connection = new ClickHouseConnection(connectionString))
             {
+                connection.Open();
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = commandText;
@@ -240,7 +238,21 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
                         command.Parameters.AddRange(parms);
 
                     using (var reader = command.ExecuteReader())
-                        dt.Load(reader);
+                    {
+                        // 创建列
+                        for (int i = 0; i < reader.FieldCount; i++)
+                            dt.Columns.Add(reader.GetName(i), reader.GetFieldType(i));
+
+                        // 填充数据
+                        while (reader.Read())
+                        {
+                            DataRow row = dt.NewRow();
+                            for (int i = 0; i < reader.FieldCount; i++)
+                                row[i] = reader.IsDBNull(i) ? DBNull.Value : reader.GetValue(i);
+
+                            dt.Rows.Add(row);
+                        }
+                    }
                 }
             }
 
@@ -270,14 +282,9 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
         public string TableDesc { get; set; }
 
         /// <summary>
-        /// 表的架构
+        /// 表的Engine
         /// </summary>
-        public string SchemaName { get; set; }
-
-        /// <summary>
-        /// 表的记录数
-        /// </summary>
-        public int Rows { get; set; }
+        public string TableEngine { get; set; }
 
         /// <summary>
         /// 是否含有主键
@@ -285,12 +292,9 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
         public bool HasPrimaryKey { get; set; }
 
         /// <summary>
-        /// 是否是DB视图
+        /// 主键名称
         /// </summary>
-        public bool IsDbView
-        {
-            get; set;
-        }
+        public string PrimaryKeyName { get; set; }
     }
 
     #endregion
