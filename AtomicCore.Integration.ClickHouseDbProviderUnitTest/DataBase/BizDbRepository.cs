@@ -1,6 +1,6 @@
-﻿using AtomicCore.DbProvider;
+using AtomicCore.DbProvider;
 
-namespace {#global_namespace#}
+namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
 {
     /// <summary>
     /// Db数据仓储
@@ -33,7 +33,12 @@ namespace {#global_namespace#}
 
 		#region Table And View
 
-		{#DbRepositoryPropertyTemplate#}
+		        /// <summary>
+        /// 用户基础信息表
+        /// </summary>
+		public static IDbProvider<Member_UserBasics> Member_UserBasics { get { return GetRepository<Member_UserBasics>(); } }
+
+
 
 		#endregion
 
