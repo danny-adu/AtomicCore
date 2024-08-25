@@ -1,4 +1,5 @@
 ﻿using ClickHouse.Client.ADO;
+using ClickHouse.Client.ADO.Readers;
 using System.Data;
 using System.Data.Common;
 using System.Text;
