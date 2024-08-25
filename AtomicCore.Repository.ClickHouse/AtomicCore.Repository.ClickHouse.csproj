@@ -8,24 +8,20 @@
 		<PackageReference Include="ClickHouse.Client" Version="7.6.2" />
 	</ItemGroup>
 
-	<PropertyGroup>
-		<ClickHouseAssemblyPath>$(SolutionDir)packages\ClickHouse.Client\7.6.2\ClickHouse.Client.dll</ClickHouseAssemblyPath>
-	</PropertyGroup>
-
 	<ItemGroup>
-		<None Update="DataBase\T4\ClickHouseT4.tt">
-			<Generator>TextTemplatingFileGenerator</Generator>
-			<LastGenOutput>ClickHouseT4.txt</LastGenOutput>
-		</None>
-		<None Update="DataBase\T4\ClickHouseT4.txt">
-			<DesignTime>True</DesignTime>
-			<AutoGen>True</AutoGen>
-			<DependentUpon>ClickHouseT4.tt</DependentUpon>
-		</None>
+		<Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+		<None Update="DataBase\T4\ClickHouseT4.tt">
+		  <Generator>TextTemplatingFileGenerator</Generator>
+		  <LastGenOutput>ClickHouseT4.txt</LastGenOutput>
+		</None>
+		<None Update="DataBase\T4\ClickHouseT4.txt">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>ClickHouseT4.tt</DependentUpon>
+		</None>
 	</ItemGroup>
 
 </Project>
