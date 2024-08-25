@@ -17,6 +17,7 @@
 <#@ import namespace="System.Linq" #>
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Text.RegularExpressions" #>
+<#@ import namespace="System.Reflection" #>
 
 <#@ include file="$(ProjectDir)DataBase\T4\DbHelper.ttinclude"  #>
 
