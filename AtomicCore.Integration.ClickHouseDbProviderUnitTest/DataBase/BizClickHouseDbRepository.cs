@@ -1,6 +1,4 @@
-using AtomicCore;
 using AtomicCore.DbProvider;
-using System;
 
 namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
 {

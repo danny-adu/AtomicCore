@@ -1,6 +1,4 @@
-﻿using AtomicCore;
-using AtomicCore.DbProvider;
-using System;
+﻿using AtomicCore.DbProvider;
 
 namespace {#global_namespace#}
 {
