@@ -1,6 +1,6 @@
 ﻿using ClickHouse.Client.ADO;
-using System;
 using System.Collections.Generic;
+using System;
 using System.Data;
 using System.Data.Common;
 using System.IO;
@@ -16,7 +16,8 @@ namespace AtomicCore.Repository.ClickHouse
     {
         public const string global_DbName = "default";
         public const string global_namespace = "AtomicCore.Integration.ClickHouseDbProviderUnitTest";
-        public static string global_ConnStr = string.Format("Host=127.0.0.1;Port=8123;Username=default;Password=123456;Database=default", global_DbName);
+        public const string global_dbPrefix = "ClickHouse";
+        public static string global_ConnStr = $"Host=127.0.0.1;Port=8123;Username={global_DbName};Password=123456;Database=default";
 
         public const string global_modelTemplate = "ModelTemplate.txt";
         public const string global_viewTemplate = "ViewTemplate.txt";
@@ -146,7 +147,7 @@ namespace AtomicCore.Repository.ClickHouse
                 ColumnID = (int)row.Field<ulong>("position"),  // Assuming ordinal_position as ColumnID
                 ColumnName = row.Field<string>("name"),
                 ColumnType = row.Field<string>("type"),
-                IsPrimaryKey = row.Field<byte>("is_in_primary_key") == 1, 
+                IsPrimaryKey = row.Field<byte>("is_in_primary_key") == 1,
                 IsIdentity = false, // ClickHouse doesn't have auto-increment, so this is generally false
                 IsNullable = row.Field<byte>("is_nullable") == 1,
                 Remark = row.Field<string>("comment") ?? string.Empty
@@ -852,10 +853,11 @@ namespace AtomicCore.Repository.ClickHouse
             //开始初始化类
             StringBuilder classBuilder = new StringBuilder(tmp_reposContent);
             classBuilder.Replace("{#global_namespace#}", T4Config.global_namespace);
+            classBuilder.Replace("{#global_dbPrefix#}", T4Config.global_dbPrefix);
             classBuilder.Replace("{#DbRepositoryPropertyTemplate#}", PropListBuilder.ToString());
 
             //开始在指定位置进行创建或修改文件
-            string io_savePath = string.Format("{0}BizDbRepository.cs", io_dataBaseDirPath);
+            string io_savePath = string.Format("{0}Biz{1}DbRepository.cs", io_dataBaseDirPath, T4Config.global_dbPrefix);
             byte[] io_saveByte = Encoding.UTF8.GetBytes(classBuilder.ToString());
             using (FileStream fs = new FileStream(io_savePath, FileMode.OpenOrCreate, FileAccess.ReadWrite))
             {
