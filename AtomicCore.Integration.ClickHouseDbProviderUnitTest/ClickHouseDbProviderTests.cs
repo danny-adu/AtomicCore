@@ -19,6 +19,8 @@ namespace AtomicCore.Integration.ClickHouseDbProvider.Tests
         [TestMethod()]
         public void InsertTest()
         {
+
+
             Assert.Fail();
         }
     }

@@ -1,11 +1,13 @@
+using AtomicCore;
 using AtomicCore.DbProvider;
+using System;
 
 namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
 {
     /// <summary>
     /// Db数据仓储
     /// </summary>
-    public static class BizDbRepository
+    public static class BizClickHouseDbRepository
 	{
 		#region Variable
 
@@ -21,7 +23,7 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
         /// <summary>
         /// 静态构造函数
         /// </summary>
-        static BizDbRepository()
+        static BizClickHouseDbRepository()
         {
             if (null == AtomicKernel.Dependency)
                 throw new Exception("请先初始调用‘AtomicCore.AtomicKernel.Initialize()’");
