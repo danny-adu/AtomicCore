@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="ClickHouse.Client" Version="7.6.2" />
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="MSTest.TestAdapter" Version="3.1.1" />
@@ -24,6 +25,18 @@
 
   <ItemGroup>
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="DataBase\T4\ClickHouseT4.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>ClickHouseT4.txt</LastGenOutput>
+    </None>
+    <None Update="DataBase\T4\ClickHouseT4.txt">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>ClickHouseT4.tt</DependentUpon>
+    </None>
   </ItemGroup>
 
 </Project>

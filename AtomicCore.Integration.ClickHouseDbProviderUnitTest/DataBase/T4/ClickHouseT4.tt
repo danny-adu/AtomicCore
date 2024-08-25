@@ -1,0 +1,25 @@
+﻿<#@ template debug="false" hostspecific="true" language="C#" #>
+<#@ assembly name="System.Core.dll" #>
+<#@ assembly name="System.Data.dll" #>
+<#@ assembly name="System.Data.Common.dll" #>
+<#@ assembly name="System.Data.DataSetExtensions.dll" #>
+<#@ assembly name="System.Xml.dll" #>
+<#@ assembly name="System.Runtime.dll" #>
+<#@ assembly name="$(TargetDir)ClickHouse.Client.dll" #>
+<#@ import namespace="ClickHouse.Client.ADO" #>
+<#@ import namespace="System" #>
+<#@ import namespace="System.Data" #>
+<#@ import namespace="System.Data.Common" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Xml" #>
+<#@ import namespace="System.Runtime" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Text.RegularExpressions" #>
+<#@ output extension=".txt" #>
+<#@ include file="$(ProjectDir)DataBase\T4\DbHelper.ttinclude"  #>
+
+<# 
+    T4FileManager.GenerateORMEntity(this.Host.TemplateFile);
+#>

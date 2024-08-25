@@ -155,18 +155,18 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
 
         private static DataTable SqlInvoke(string connectionString, string commandText, params DbParameter[] parms)
         {
-            var dt = new DataTable();
+            DataTable dt = new DataTable();
 
-            using (var connection = new ClickHouseConnection(connectionString))
+            using (ClickHouseConnection connection = new ClickHouseConnection(connectionString))
             {
                 connection.Open();
-                using (var command = connection.CreateCommand())
+                using (ClickHouseCommand command = connection.CreateCommand())
                 {
                     command.CommandText = commandText;
                     if (null != parms && parms.Length > 0)
                         command.Parameters.AddRange(parms);
 
-                    using (var reader = command.ExecuteReader())
+                    using (DbDataReader reader = command.ExecuteReader())
                     {
                         // 创建列
                         for (int i = 0; i < reader.FieldCount; i++)
