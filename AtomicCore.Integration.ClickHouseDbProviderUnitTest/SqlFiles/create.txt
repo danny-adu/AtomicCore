@@ -3,7 +3,7 @@
 	`UserID` Int32,
 	`UserName` String,
 	`UserAge` Int32,
-	`UserIsBlock` UInt8,
+	`UserIsBlock` bool,
 	`UserCreateAt` DateTime
 ) 
 ENGINE = MergeTree

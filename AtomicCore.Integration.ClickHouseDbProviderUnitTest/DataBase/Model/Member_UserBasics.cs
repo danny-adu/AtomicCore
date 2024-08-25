@@ -31,8 +31,8 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
         /// <summary>
         /// 
         /// </summary>
-		[DbColumn(DbColumnName = "UserIsBlock", DbType = "UInt8", IsDbPrimaryKey = false, IsDbGenerated =  false)]
-        public byte UserIsBlock { get; set; } = 0;
+		[DbColumn(DbColumnName = "UserIsBlock", DbType = "Bool", IsDbPrimaryKey = false, IsDbGenerated =  false)]
+        public bool UserIsBlock { get; set; } = false;
 
         /// <summary>
         /// 

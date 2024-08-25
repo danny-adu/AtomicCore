@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using AtomicCore.Integration.ClickHouseDbProviderUnitTest;
 
 namespace AtomicCore.Integration.ClickHouseDbProvider.Tests
 {
@@ -19,9 +20,16 @@ namespace AtomicCore.Integration.ClickHouseDbProvider.Tests
         [TestMethod()]
         public void InsertTest()
         {
+            var insResult = BizClickHouseDbRepository.Member_UserBasics.Insert(new Member_UserBasics()
+            {
+                UserID = 1,
+                UserName = "kavin",
+                UserAge = 18,
+                UserCreateAt = DateTime.Now,
+                UserIsBlock = false
+            });
 
-
-            Assert.Fail();
+            Assert.IsTrue(insResult.IsAvailable());
         }
     }
 }
