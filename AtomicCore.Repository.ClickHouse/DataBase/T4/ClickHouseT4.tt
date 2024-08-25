@@ -7,7 +7,9 @@
 <#@ assembly name="System.Data.DataSetExtensions" #>
 <#@ assembly name="System.Xml" #>
 <#@ assembly name="System.Runtime" #>
-<#@ assembly name="mscorlib" #>
+<#@ assembly name="netstandard" #>
+<#@ assembly name="$(ClickHouseDLL)" #>
+<#@ import namespace="ClickHouse.Client.ADO" #>
 <#@ import namespace="System" #>
 <#@ import namespace="System.Collections.Generic" #>
 <#@ import namespace="System.Data" #>
@@ -16,3 +18,9 @@
 <#@ import namespace="System.Linq" #>
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Text.RegularExpressions" #>
+
+<#@ include file="$(ProjectDir)DataBase\T4\DbHelper.ttinclude"  #>
+
+<# 
+    T4FileManager.GenerateORMEntity(this.Host.TemplateFile);
+#>

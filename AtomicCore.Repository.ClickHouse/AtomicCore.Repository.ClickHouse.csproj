@@ -4,6 +4,13 @@
 		<TargetFramework>netstandard2.1</TargetFramework>
 	</PropertyGroup>
 
+	<PropertyGroup>
+		<!-- 设置 NuGet 包路径 -->
+		<NuGetPackagePath>$(UserProfile)\.nuget\packages</NuGetPackagePath>
+		<!-- 设置 ClickHouse 包路径 -->
+		<ClickHouseDLL>$(NuGetPackagePath)\clickhouse.client\7.6.2\lib\$(TargetFramework)\ClickHouse.Client.dll</ClickHouseDLL>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<PackageReference Include="ClickHouse.Client" Version="7.6.2" />
 	</ItemGroup>
@@ -14,13 +21,13 @@
 
 	<ItemGroup>
 		<None Update="DataBase\T4\ClickHouseT4.tt">
-		  <Generator>TextTemplatingFileGenerator</Generator>
-		  <LastGenOutput>ClickHouseT4.txt</LastGenOutput>
+			<Generator>TextTemplatingFileGenerator</Generator>
+			<LastGenOutput>ClickHouseT4.txt</LastGenOutput>
 		</None>
 		<None Update="DataBase\T4\ClickHouseT4.txt">
-		  <DesignTime>True</DesignTime>
-		  <AutoGen>True</AutoGen>
-		  <DependentUpon>ClickHouseT4.tt</DependentUpon>
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>ClickHouseT4.tt</DependentUpon>
 		</None>
 	</ItemGroup>
 
