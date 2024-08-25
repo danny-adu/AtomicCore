@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace AtomicCore.Repository.ClickHouse
+namespace AtomicCore.Repository.ClickHouseDb
 {
     #region T4Config
 
@@ -158,7 +158,7 @@ namespace AtomicCore.Repository.ClickHouse
 
         #region SqlInvoke
 
-        private static DataTable SqlInvoke(string connectionString, string commandText, params DbParameter[] parms)
+        private static DataTable SqlInvoke(string connectionString, string commandText)
         {
             DataTable dt = new DataTable();
 
@@ -168,8 +168,6 @@ namespace AtomicCore.Repository.ClickHouse
                 using (ClickHouseCommand command = connection.CreateCommand())
                 {
                     command.CommandText = commandText;
-                    if (null != parms && parms.Length > 0)
-                        command.Parameters.AddRange(parms);
 
                     using (DbDataReader reader = command.ExecuteReader())
                     {

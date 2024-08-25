@@ -1,23 +1,21 @@
 ﻿<#@ template debug="false" hostspecific="true" language="C#" #>
 <#@ output extension=".txt" #>
-<#@ assembly name="System" #>
-<#@ assembly name="System.Core" #>
-<#@ assembly name="System.Data" #>
-<#@ assembly name="System.Data.Common" #>
-<#@ assembly name="System.Data.DataSetExtensions" #>
-<#@ assembly name="System.Xml" #>
-<#@ assembly name="netstandard" #>
+<#@ assembly name="System.Core.dll" #>
+<#@ assembly name="System.Data.dll" #>
+<#@ assembly name="System.Data.DataSetExtensions.dll" #>
+<#@ assembly name="System.Xml.dll" #>
+<#@ assembly name="mscorlib" #>
 <#@ assembly name="$(ClickHouseDLL)" #>
 <#@ import namespace="ClickHouse.Client.ADO" #>
 <#@ import namespace="System" #>
-<#@ import namespace="System.Collections.Generic" #>
-<#@ import namespace="System.Data" #>
-<#@ import namespace="System.Data.Common" #>
-<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Xml" #>
 <#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Data" #>
+<#@ import namespace="System.Data.SqlClient" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.IO" #>
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Text.RegularExpressions" #>
-<#@ import namespace="System.Reflection" #>
 
 <#@ include file="$(ProjectDir)DataBase\T4\DbHelper.ttinclude"  #>
 

@@ -1,5 +1,4 @@
 ﻿using ClickHouse.Client.ADO;
-using ClickHouse.Client.ADO.Readers;
 using System.Data;
 using System.Data.Common;
 using System.Text;
@@ -155,7 +154,7 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
 
         #region SqlInvoke
 
-        private static DataTable SqlInvoke(string connectionString, string commandText, params DbParameter[] parms)
+        private static DataTable SqlInvoke(string connectionString, string commandText)
         {
             DataTable dt = new DataTable();
 
@@ -165,8 +164,6 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
                 using (ClickHouseCommand command = connection.CreateCommand())
                 {
                     command.CommandText = commandText;
-                    if (null != parms && parms.Length > 0)
-                        command.Parameters.AddRange(parms);
 
                     using (DbDataReader reader = command.ExecuteReader())
                     {

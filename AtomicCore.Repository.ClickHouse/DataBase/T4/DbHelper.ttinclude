@@ -147,7 +147,7 @@
 
         #region SqlInvoke
 
-        private static DataTable SqlInvoke(string connectionString, string commandText, params DbParameter[] parms)
+        private static DataTable SqlInvoke(string connectionString, string commandText)
         {
             DataTable dt = new DataTable();
 
@@ -157,8 +157,6 @@
                 using (ClickHouseCommand command = connection.CreateCommand())
                 {
                     command.CommandText = commandText;
-                    if (null != parms && parms.Length > 0)
-                        command.Parameters.AddRange(parms);
 
                     using (DbDataReader reader = command.ExecuteReader())
                     {
