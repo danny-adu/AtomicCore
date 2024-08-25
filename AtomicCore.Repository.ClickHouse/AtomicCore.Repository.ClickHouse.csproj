@@ -9,7 +9,17 @@
 		<NuGetPackagePath>$(UserProfile)\.nuget\packages</NuGetPackagePath>
 		<!-- 设置 ClickHouse 包路径 -->
 		<ClickHouseDLL>$(NuGetPackagePath)\clickhouse.client\7.6.2\lib\$(TargetFramework)\ClickHouse.Client.dll</ClickHouseDLL>
+		<!-- 引用中的 -->
+		<NETStandard>C:\Program Files\dotnet\packs\NETStandard.Library.Ref\2.1.0</NETStandard>
 	</PropertyGroup>
+	
+	<ItemGroup>
+	  <Compile Include="DataBase\T4\ClickHouseT4.txt">
+	    <DesignTime>True</DesignTime>
+	    <AutoGen>True</AutoGen>
+	    <DependentUpon>ClickHouseT4.tt</DependentUpon>
+	  </Compile>
+	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="ClickHouse.Client" Version="7.6.2" />
@@ -25,9 +35,9 @@
 			<LastGenOutput>ClickHouseT4.txt</LastGenOutput>
 		</None>
 		<None Update="DataBase\T4\ClickHouseT4.txt">
-			<DesignTime>True</DesignTime>
-			<AutoGen>True</AutoGen>
-			<DependentUpon>ClickHouseT4.tt</DependentUpon>
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>ClickHouseT4.tt</DependentUpon>
 		</None>
 	</ItemGroup>
 

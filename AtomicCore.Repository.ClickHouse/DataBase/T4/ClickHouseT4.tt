@@ -6,7 +6,6 @@
 <#@ assembly name="System.Data.Common" #>
 <#@ assembly name="System.Data.DataSetExtensions" #>
 <#@ assembly name="System.Xml" #>
-<#@ assembly name="System.Runtime" #>
 <#@ assembly name="netstandard" #>
 <#@ assembly name="$(ClickHouseDLL)" #>
 <#@ import namespace="ClickHouse.Client.ADO" #>
@@ -20,7 +19,3 @@
 <#@ import namespace="System.Text.RegularExpressions" #>
 
 <#@ include file="$(ProjectDir)DataBase\T4\DbHelper.ttinclude"  #>
-
-<# 
-    T4FileManager.GenerateORMEntity(this.Host.TemplateFile);
-#>
