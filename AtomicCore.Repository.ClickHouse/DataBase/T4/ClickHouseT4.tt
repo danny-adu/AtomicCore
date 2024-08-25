@@ -1,17 +1,22 @@
 ﻿<#@ template debug="false" hostspecific="true" language="C#" #>
 <#@ output extension=".txt" #>
-<#@ assembly name="System.Core.dll" #>
-<#@ assembly name="System.Data.dll" #>
-<#@ assembly name="System.Data.DataSetExtensions.dll" #>
-<#@ assembly name="System.Xml.dll" #>
-<#@ assembly name="mscorlib" #>
+
+<#@ assembly name="$(NETStandard)\ref\netstandard2.1\mscorlib.dll" #>
+<#@ assembly name="$(NETStandard)\ref\netstandard2.1\System.dll" #>
+<#@ assembly name="$(NETStandard)\ref\netstandard2.1\System.Core.dll" #>
+<#@ assembly name="$(NETStandard)\ref\netstandard2.1\System.Data.dll" #>
+<#@ assembly name="$(NETStandard)\ref\netstandard2.1\System.Data.Common.dll" #>
+<#@ assembly name="$(NETStandard)\ref\netstandard2.1\System.Xml.dll" #>
+<#@ assembly name="$(NETStandard)\ref\netstandard2.1\System.IO.dll" #>
+<#@ assembly name="$(NETStandard)\ref\netstandard2.1\System.Linq.dll" #>
+
 <#@ assembly name="$(ClickHouseDLL)" #>
 <#@ import namespace="ClickHouse.Client.ADO" #>
 <#@ import namespace="System" #>
 <#@ import namespace="System.Xml" #>
 <#@ import namespace="System.Linq" #>
 <#@ import namespace="System.Data" #>
-<#@ import namespace="System.Data.SqlClient" #>
+<#@ import namespace="System.Data.Common" #>
 <#@ import namespace="System.Collections.Generic" #>
 <#@ import namespace="System.IO" #>
 <#@ import namespace="System.Text" #>

@@ -1,0 +1,5 @@
+﻿        /// <summary>
+        /// {#propertyRemark#}
+        /// </summary>
+		[DbColumn(DbColumnName = "{#propertyName#}", DbType = "{#propertyColumnType#}", IsDbPrimaryKey = {#propertyIsPrimaryKey#}, IsDbGenerated =  {#propertyIsIdentity#})]
+        public {#propertyCSharpType#} {#propertyName#} { get; set; } = {#propertyDefVal#};

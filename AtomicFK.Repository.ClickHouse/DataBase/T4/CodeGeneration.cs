@@ -1,10 +1,21 @@
-<#+
+ï»¿using ClickHouse.Client.ADO;
+using System.Collections.Generic;
+using System;
+using System.Data;
+using System.Data.Common;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+
+namespace AtomicCore.Repository.ClickHouseDb
+{
     #region T4Config
 
     public class T4Config
     {
         public const string global_DbName = "default";
-        public const string global_namespace = "AtomicCore.Repository.ClickHouse";
+        public const string global_namespace = "AtomicCore.Integration.ClickHouseDbProviderUnitTest";
         public const string global_dbPrefix = "ClickHouse";
         public static string global_ConnStr = $"Host=127.0.0.1;Port=8123;Username={global_DbName};Password=123456;Database=default";
 
@@ -36,7 +47,7 @@
 
         public static List<DbTable> GetDbTables(string connectionString, string database)
         {
-            string sql = @$"
+            string sql = string.Format(@"
                 SELECT 
                         name, 
                         engine, 
@@ -45,8 +56,8 @@
                         primary_key, 
                         comment
                 FROM 
-                        system.tables WHERE database = '{database}' ORDER BY `name` ASC
-            ";
+                        system.tables WHERE database = '{0}' ORDER BY `name` ASC
+            ", database);
 
             DataTable dt = SqlInvoke(connectionString, sql);
             var tb_list = dt.Rows.Cast<DataRow>().Select(row => new DbTable
@@ -67,7 +78,7 @@
 
         public static List<DbView> GetDbViews(string connectionString, string database)
         {
-            string sql = $@"             
+            string sql = string.Format(@"             
                 SELECT 
                         name, 
                         engine, 
@@ -78,9 +89,9 @@
                 FROM 
                         system.tables
                 WHERE 
-                        database = '{database}' AND (engine = 'View' OR engine = 'MaterializedView')
+                        database = '{0}' AND (engine = 'View' OR engine = 'MaterializedView')
                 ORDER BY name;
-            ";
+            ", database);
 
             DataTable dt = SqlInvoke(connectionString, sql);
             var view_list = dt.Rows.Cast<DataRow>().Select(row => new DbView
@@ -101,7 +112,7 @@
 
         public static List<DbColumn> GetDbColumns(string connectionString, string database, string table_or_view)
         {
-            string sql = $@"
+            string sql = string.Format(@"
                 SELECT 
                         position,
                         name,
@@ -126,9 +137,9 @@
                 FROM 
                         system.columns
                 WHERE 
-                        database = '{database}' AND table = '{table_or_view}'
+                        database = '{0}' AND table = '{1}'
                 ORDER BY position;
-            ";
+            ", database, table_or_view);
 
             DataTable dt = SqlInvoke(connectionString, sql);
             return dt.Rows.Cast<DataRow>().Select(row => new DbColumn()
@@ -160,11 +171,11 @@
 
                     using (DbDataReader reader = command.ExecuteReader())
                     {
-                        // ´´½¨ÁĞ
+                        // åˆ›å»ºåˆ—
                         for (int i = 0; i < reader.FieldCount; i++)
                             dt.Columns.Add(reader.GetName(i), reader.GetFieldType(i));
 
-                        // Ìî³äÊı¾İ
+                        // å¡«å……æ•°æ®
                         while (reader.Read())
                         {
                             DataRow row = dt.NewRow();
@@ -188,48 +199,48 @@
     #region DbTable
 
     /// <summary>
-    /// ±í½á¹¹
+    /// è¡¨ç»“æ„
     /// </summary>
     public sealed class DbTable
     {
         /// <summary>
-        /// ±íÃû³Æ
+        /// è¡¨åç§°
         /// </summary>
         public string TableName { get; set; }
 
         /// <summary>
-        /// ±íÃ÷ËµÃ÷
+        /// è¡¨æ˜è¯´æ˜
         /// </summary>
         public string TableDesc { get; set; }
 
         /// <summary>
-        /// ±íµÄEngine
+        /// è¡¨çš„Engine
         /// </summary>
         public string TableEngine { get; set; }
 
         /// <summary>
-        /// ÊÇ·ñº¬ÓĞÖ÷¼ü
+        /// æ˜¯å¦å«æœ‰ä¸»é”®
         /// </summary>
         public bool HasPrimaryKey { get; set; }
 
         /// <summary>
-        /// Ö÷¼üÃû³Æ
+        /// ä¸»é”®åç§°
         /// </summary>
         public string PrimaryKeyName { get; set; }
     }
 
     /// <summary>
-    /// View½á¹¹
+    /// Viewç»“æ„
     /// </summary>
     public sealed class DbView
     {
         /// <summary>
-        /// ViewÃû³Æ
+        /// Viewåç§°
         /// </summary>
         public string ViewName { get; set; }
 
         /// <summary>
-        /// ViewËµÃ÷
+        /// Viewè¯´æ˜
         /// </summary>
         public string ViewDesc { get; set; }
 
@@ -239,12 +250,12 @@
         public string ViewEngine { get; set; }
 
         /// <summary>
-        /// ÊÇ·ñº¬ÓĞÖ÷¼ü
+        /// æ˜¯å¦å«æœ‰ä¸»é”®
         /// </summary>
         public bool HasPrimaryKey { get; set; }
 
         /// <summary>
-        /// Ö÷¼üÃû³Æ
+        /// ä¸»é”®åç§°
         /// </summary>
         public string PrimaryKeyName { get; set; }
     }
@@ -254,47 +265,47 @@
     #region DbColumn
 
     /// <summary>
-    /// ±í×Ö¶Î½á¹¹
+    /// è¡¨å­—æ®µç»“æ„
     /// </summary>
     public sealed class DbColumn
     {
         /// <summary>
-        /// ×Ö¶ÎID
+        /// å­—æ®µID
         /// </summary>
         public int ColumnID { get; set; }
 
         /// <summary>
-        /// ×Ö¶ÎÃû³Æ
+        /// å­—æ®µåç§°
         /// </summary>
         public string ColumnName { get; set; }
 
         /// <summary>
-        /// ×Ö¶ÎÀàĞÍ
+        /// å­—æ®µç±»å‹
         /// </summary>
         public string ColumnType { get; set; }
 
         /// <summary>
-        /// ÊÇ·ñÖ÷¼ü
+        /// æ˜¯å¦ä¸»é”®
         /// </summary>
         public bool IsPrimaryKey { get; set; }
 
         /// <summary>
-        /// ÊÇ·ñ×ÔÔöÁĞ
+        /// æ˜¯å¦è‡ªå¢åˆ—
         /// </summary>
         public bool IsIdentity { get; set; }
 
         /// <summary>
-        /// ÊÇ·ñÔÊĞí¿Õ
+        /// æ˜¯å¦å…è®¸ç©º
         /// </summary>
         public bool IsNullable { get; set; }
 
         /// <summary>
-        /// ÃèÊö
+        /// æè¿°
         /// </summary>
         public string Remark { get; set; }
 
         /// <summary>
-        /// Êı¾İ¿âÀàĞÍ¶ÔÓ¦µÄC#ÀàĞÍ # ReadOnly
+        /// æ•°æ®åº“ç±»å‹å¯¹åº”çš„C#ç±»å‹ # ReadOnly
         /// </summary>
         public string CSharpType
         {
@@ -305,7 +316,7 @@
         }
 
         /// <summary>
-        /// Êı¾İ¿âÀàĞÍ¶ÔÓ¦µÄC#ÀàĞÍÄ¬ÈÏÖµ # ReadOnly
+        /// æ•°æ®åº“ç±»å‹å¯¹åº”çš„C#ç±»å‹é»˜è®¤å€¼ # ReadOnly
         /// </summary>
         public string CSharpDefVal
         {
@@ -316,7 +327,7 @@
         }
 
         /// <summary>
-        /// ¹«¹²ÀàĞÍ # ReadOnly
+        /// å…¬å…±ç±»å‹ # ReadOnly
         /// </summary>
         public string CommonType
         {
@@ -580,7 +591,7 @@
     public class T4FileManager
     {
         /// <summary>
-        /// Ö´ĞĞÉú³É
+        /// æ‰§è¡Œç”Ÿæˆ
         /// </summary>
         /// <param name="t4_host_templateFile"></param>
         public static void GenerateORMEntity(string t4_host_templateFile)
@@ -588,40 +599,40 @@
             string baseDirName = "DataBase";
             int baseCuteLen = baseDirName.Length + 1;
 
-            //Business³ÌĞò¼¯ÀïµÄDataBaseÎÄ¼ş¼Ğ¸ùÂ·¾¶,×¢Òâ£º½á¹û´ø¸Ü
+            //Businessç¨‹åºé›†é‡Œçš„DataBaseæ–‡ä»¶å¤¹æ ¹è·¯å¾„,æ³¨æ„ï¼šç»“æœå¸¦æ 
             string io_dataBaseDirPath = t4_host_templateFile.Remove(t4_host_templateFile.IndexOf(baseDirName) + baseCuteLen);
-            //t4Ä£°æµÄ¸ùÂ·¾¶,×¢Òâ£º½á¹û´ø¸Ü
+            //t4æ¨¡ç‰ˆçš„æ ¹è·¯å¾„,æ³¨æ„ï¼šç»“æœå¸¦æ 
             string io_t4TempBasePath = t4_host_templateFile.Remove(t4_host_templateFile.LastIndexOf('\\') + 1);
 
-            List<DbTable> tableList = DbHelper.GetDbTables(T4Config.global_ConnStr, T4Config.global_DbName);//»ñÈ¡±íÁĞ±í
-            List<DbView> viewList = DbHelper.GetDbViews(T4Config.global_ConnStr, T4Config.global_DbName);//»ñÈ¡ÊÓÍ¼ÁĞ±í
+            List<DbTable> tableList = DbHelper.GetDbTables(T4Config.global_ConnStr, T4Config.global_DbName);//è·å–è¡¨åˆ—è¡¨
+            List<DbView> viewList = DbHelper.GetDbViews(T4Config.global_ConnStr, T4Config.global_DbName);//è·å–è§†å›¾åˆ—è¡¨
 
-            //¿ªÊ¼Éú³ÉModel + View
+            //å¼€å§‹ç”ŸæˆModel + View
             CreateModelFiles(tableList, io_t4TempBasePath, io_dataBaseDirPath);
             CreateViewFiles(viewList, io_t4TempBasePath, io_dataBaseDirPath);
 
-            //´´½¨²Ö´¢¹ÜÀíÀà
+            //åˆ›å»ºä»“å‚¨ç®¡ç†ç±»
             CreateDbRepository(tableList, viewList, io_t4TempBasePath, io_dataBaseDirPath);
         }
 
         /// <summary>
-        /// Éú³ÉModel
+        /// ç”ŸæˆModel
         /// </summary>
-        /// <param name="tableList">±íÁĞ±í</param>
-        /// <param name="io_t4TempBasePath">t4Ä£°æµÄIOÂ·¾¶,½áÎ²´ø'/'</param>
-        /// <param name="io_dataBaseDirPath">Business³ÌĞò¼¯ÀïµÄDataBaseÎÄ¼ş¼Ğ¸ùÂ·¾¶,½áÎ²´ø'/',Éú³ÉĞÂµÄÎÄ¼şµÄÊ±ºòÊ¹ÓÃ</param>
+        /// <param name="tableList">è¡¨åˆ—è¡¨</param>
+        /// <param name="io_t4TempBasePath">t4æ¨¡ç‰ˆçš„IOè·¯å¾„,ç»“å°¾å¸¦'/'</param>
+        /// <param name="io_dataBaseDirPath">Businessç¨‹åºé›†é‡Œçš„DataBaseæ–‡ä»¶å¤¹æ ¹è·¯å¾„,ç»“å°¾å¸¦'/',ç”Ÿæˆæ–°çš„æ–‡ä»¶çš„æ—¶å€™ä½¿ç”¨</param>
         private static void CreateModelFiles(List<DbTable> tableList, string io_t4TempBasePath, string io_dataBaseDirPath)
         {
-            //»ù´¡ÑéÖ¤
+            //åŸºç¡€éªŒè¯
             if (null == tableList || !tableList.Any() || string.IsNullOrEmpty(io_t4TempBasePath))
                 return;
 
-            //³õÊ¼»¯Ä£ĞÍ´æ´¢ÎÄ¼ş¼Ğ
+            //åˆå§‹åŒ–æ¨¡å‹å­˜å‚¨æ–‡ä»¶å¤¹
             string io_saveDirPath = string.Format("{0}{1}", io_dataBaseDirPath, T4Config.global_modelSaveDir);
             if (!System.IO.Directory.Exists(io_saveDirPath))
                 System.IO.Directory.CreateDirectory(io_saveDirPath);
 
-            //Æ´½ÓModel + PropertyÄ£°æIOÂ·¾¶
+            //æ‹¼æ¥Model + Propertyæ¨¡ç‰ˆIOè·¯å¾„
             string io_modelPath = string.Format("{0}{1}", io_t4TempBasePath, T4Config.global_modelTemplate);
             string io_propPath = string.Format("{0}{1}", io_t4TempBasePath, T4Config.global_propertyTemplate);
             if (!System.IO.File.Exists(io_modelPath))
@@ -629,7 +640,7 @@
             if (!System.IO.File.Exists(io_propPath))
                 return;
 
-            //¼ÓÔØModel + PropertyÄ£°æÁ÷
+            //åŠ è½½Model + Propertyæ¨¡ç‰ˆæµ
             string tmp_modelContent = string.Empty;
             string tmp_propContent = string.Empty;
             using (StreamReader sr_modelTemp = new StreamReader(io_modelPath, Encoding.UTF8))
@@ -642,16 +653,16 @@
             }
 
 
-            //¿ªÊ¼Ñ­»·ËùÓĞ±íÊı¾İ
+            //å¼€å§‹å¾ªç¯æ‰€æœ‰è¡¨æ•°æ®
             StringBuilder tableBuilder = null;
             foreach (var tb_item in tableList)
             {
-                //»ñÈ¡¸Ã±íµÄËùÓĞ×Ö¶Î,Èô¸Ã±íÎŞ×Ö¶Î,ÔòÌø³ö±¾ÂÖÑ­»·
+                //è·å–è¯¥è¡¨çš„æ‰€æœ‰å­—æ®µ,è‹¥è¯¥è¡¨æ— å­—æ®µ,åˆ™è·³å‡ºæœ¬è½®å¾ªç¯
                 List<DbColumn> colList = DbHelper.GetDbColumns(T4Config.global_ConnStr, T4Config.global_DbName, tb_item.TableName);
                 if (null == colList || !colList.Any())
                     continue;
 
-                //Ñ­»·×Ö¶Î¿ªÊ¼ÓÅÏÈ¹¹ÔìÊôĞÔ²¿·Ö
+                //å¾ªç¯å­—æ®µå¼€å§‹ä¼˜å…ˆæ„é€ å±æ€§éƒ¨åˆ†
                 StringBuilder propBuilder = new StringBuilder();
                 StringBuilder piBuilder = null;
                 foreach (var col_item in colList)
@@ -668,10 +679,10 @@
                     propBuilder.AppendLine(piBuilder.ToString());
                 }
                 if (propBuilder.Length <= 0)
-                    propBuilder.Append("¸Ã±íÎŞ×Ö¶Î");
+                    propBuilder.Append("è¯¥è¡¨æ— å­—æ®µ");
 
 
-                //³õÊ¼»¯±íÄ£°æÊı¾İ
+                //åˆå§‹åŒ–è¡¨æ¨¡ç‰ˆæ•°æ®
                 tableBuilder = new StringBuilder(tmp_modelContent);
                 tableBuilder.Replace("{#global_namespace#}", T4Config.global_namespace);
                 tableBuilder.Replace("{#global_DbName#}", T4Config.global_DbName);
@@ -679,7 +690,7 @@
                 tableBuilder.Replace("{#tableDesc#}", tb_item.TableDesc);
                 tableBuilder.Replace("{#PropertyTemplate#}", propBuilder.ToString());
 
-                //ÔÚÖ¸¶¨Î»ÖÃ±£´æÎÄ¼ş
+                //åœ¨æŒ‡å®šä½ç½®ä¿å­˜æ–‡ä»¶
                 string io_savePath = string.Format("{0}{1}/{2}.cs", io_dataBaseDirPath, T4Config.global_modelSaveDir, tb_item.TableName);
                 byte[] io_saveByte = Encoding.UTF8.GetBytes(tableBuilder.ToString());
                 using (FileStream fs = new FileStream(io_savePath, FileMode.OpenOrCreate, FileAccess.ReadWrite))
@@ -691,23 +702,23 @@
         }
 
         /// <summary>
-        /// Éú³ÉView
+        /// ç”ŸæˆView
         /// </summary>
-        /// <param name="viewList">ÊÓÍ¼ÁĞ±í</param>
-        /// <param name="io_t4TempBasePath">t4Ä£°æµÄIOÂ·¾¶,½áÎ²´ø'/'</param>
-        /// <param name="io_dataBaseDirPath">Business³ÌĞò¼¯ÀïµÄDataBaseÎÄ¼ş¼Ğ¸ùÂ·¾¶,½áÎ²´ø'/',Éú³ÉĞÂµÄÎÄ¼şµÄÊ±ºòÊ¹ÓÃ</param>
+        /// <param name="viewList">è§†å›¾åˆ—è¡¨</param>
+        /// <param name="io_t4TempBasePath">t4æ¨¡ç‰ˆçš„IOè·¯å¾„,ç»“å°¾å¸¦'/'</param>
+        /// <param name="io_dataBaseDirPath">Businessç¨‹åºé›†é‡Œçš„DataBaseæ–‡ä»¶å¤¹æ ¹è·¯å¾„,ç»“å°¾å¸¦'/',ç”Ÿæˆæ–°çš„æ–‡ä»¶çš„æ—¶å€™ä½¿ç”¨</param>
         private static void CreateViewFiles(List<DbView> viewList, string io_t4TempBasePath, string io_dataBaseDirPath)
         {
-            //»ù´¡ÑéÖ¤
+            //åŸºç¡€éªŒè¯
             if (null == viewList || !viewList.Any() || string.IsNullOrEmpty(io_t4TempBasePath))
                 return;
 
-            //³õÊ¼»¯Ä£ĞÍ´æ´¢ÎÄ¼ş¼Ğ
+            //åˆå§‹åŒ–æ¨¡å‹å­˜å‚¨æ–‡ä»¶å¤¹
             string io_saveDirPath = string.Format("{0}{1}", io_dataBaseDirPath, T4Config.global_viewSaveDir);
             if (!System.IO.Directory.Exists(io_saveDirPath))
                 System.IO.Directory.CreateDirectory(io_saveDirPath);
 
-            //Æ´½ÓModel + PropertyÄ£°æIOÂ·¾¶
+            //æ‹¼æ¥Model + Propertyæ¨¡ç‰ˆIOè·¯å¾„
             string io_modelPath = string.Format("{0}{1}", io_t4TempBasePath, T4Config.global_modelTemplate);
             string io_propPath = string.Format("{0}{1}", io_t4TempBasePath, T4Config.global_propertyTemplate);
             if (!System.IO.File.Exists(io_modelPath))
@@ -715,7 +726,7 @@
             if (!System.IO.File.Exists(io_propPath))
                 return;
 
-            //¼ÓÔØModel + PropertyÄ£°æÁ÷
+            //åŠ è½½Model + Propertyæ¨¡ç‰ˆæµ
             string tmp_modelContent = string.Empty;
             string tmp_propContent = string.Empty;
             using (StreamReader sr_modelTemp = new StreamReader(io_modelPath, Encoding.UTF8))
@@ -728,16 +739,16 @@
             }
 
 
-            //¿ªÊ¼Ñ­»·ËùÓĞ±íÊı¾İ
+            //å¼€å§‹å¾ªç¯æ‰€æœ‰è¡¨æ•°æ®
             StringBuilder tableBuilder = null;
             foreach (var tb_item in viewList)
             {
-                //»ñÈ¡¸Ã±íµÄËùÓĞ×Ö¶Î,Èô¸Ã±íÎŞ×Ö¶Î,ÔòÌø³ö±¾ÂÖÑ­»·
+                //è·å–è¯¥è¡¨çš„æ‰€æœ‰å­—æ®µ,è‹¥è¯¥è¡¨æ— å­—æ®µ,åˆ™è·³å‡ºæœ¬è½®å¾ªç¯
                 List<DbColumn> colList = DbHelper.GetDbColumns(T4Config.global_ConnStr, T4Config.global_DbName, tb_item.ViewName);
                 if (null == colList || !colList.Any())
                     continue;
 
-                //Ñ­»·×Ö¶Î¿ªÊ¼ÓÅÏÈ¹¹ÔìÊôĞÔ²¿·Ö
+                //å¾ªç¯å­—æ®µå¼€å§‹ä¼˜å…ˆæ„é€ å±æ€§éƒ¨åˆ†
                 StringBuilder propBuilder = new StringBuilder();
                 StringBuilder piBuilder = null;
                 foreach (var col_item in colList)
@@ -754,10 +765,10 @@
                     propBuilder.AppendLine(piBuilder.ToString());
                 }
                 if (propBuilder.Length <= 0)
-                    propBuilder.Append("¸Ã±íÎŞ×Ö¶Î");
+                    propBuilder.Append("è¯¥è¡¨æ— å­—æ®µ");
 
 
-                //³õÊ¼»¯±íÄ£°æÊı¾İ
+                //åˆå§‹åŒ–è¡¨æ¨¡ç‰ˆæ•°æ®
                 tableBuilder = new StringBuilder(tmp_modelContent);
                 tableBuilder.Replace("{#global_namespace#}", T4Config.global_namespace);
                 tableBuilder.Replace("{#global_DbName#}", T4Config.global_DbName);
@@ -765,7 +776,7 @@
                 tableBuilder.Replace("{#tableDesc#}", string.IsNullOrEmpty(tb_item.ViewDesc) ? tb_item.ViewName : tb_item.ViewDesc);
                 tableBuilder.Replace("{#PropertyTemplate#}", propBuilder.ToString());
 
-                //ÔÚÖ¸¶¨Î»ÖÃ±£´æÎÄ¼ş
+                //åœ¨æŒ‡å®šä½ç½®ä¿å­˜æ–‡ä»¶
                 string io_savePath = string.Format("{0}{1}/{2}.cs", io_dataBaseDirPath, T4Config.global_viewSaveDir, tb_item.ViewName);
                 byte[] io_saveByte = Encoding.UTF8.GetBytes(tableBuilder.ToString());
                 using (FileStream fs = new FileStream(io_savePath, FileMode.OpenOrCreate, FileAccess.ReadWrite))
@@ -777,18 +788,18 @@
         }
 
         /// <summary>
-        /// Éú³ÉDbRepositoryµÄ²Ö´¢¹ÜÀíÀà(Éú³É BizDbRepository.cs Àà)
+        /// ç”ŸæˆDbRepositoryçš„ä»“å‚¨ç®¡ç†ç±»(ç”Ÿæˆ BizDbRepository.cs ç±»)
         /// </summary>
         /// <param name="tableViewList"></param>
-        /// <param name="io_t4TempBasePath">t4Ä£°æµÄIOÂ·¾¶,½áÎ²´ø'/'</param>
-        /// <param name="io_dataBaseDirPath">Business³ÌĞò¼¯ÀïµÄDataBaseÎÄ¼ş¼Ğ¸ùÂ·¾¶,½áÎ²´ø'/',Éú³ÉĞÂµÄÎÄ¼şµÄÊ±ºòÊ¹ÓÃ</param>
+        /// <param name="io_t4TempBasePath">t4æ¨¡ç‰ˆçš„IOè·¯å¾„,ç»“å°¾å¸¦'/'</param>
+        /// <param name="io_dataBaseDirPath">Businessç¨‹åºé›†é‡Œçš„DataBaseæ–‡ä»¶å¤¹æ ¹è·¯å¾„,ç»“å°¾å¸¦'/',ç”Ÿæˆæ–°çš„æ–‡ä»¶çš„æ—¶å€™ä½¿ç”¨</param>
         private static void CreateDbRepository(List<DbTable> tableList, List<DbView> viewList, string io_t4TempBasePath, string io_dataBaseDirPath)
         {
-            //»ù´¡ÑéÖ¤
+            //åŸºç¡€éªŒè¯
             if (null == tableList || !tableList.Any() || string.IsNullOrEmpty(io_t4TempBasePath))
                 return;
 
-            //Æ´½ÓÄ£°æIOÂ·¾¶
+            //æ‹¼æ¥æ¨¡ç‰ˆIOè·¯å¾„
             string io_dbReposTempPath = string.Format("{0}{1}", io_t4TempBasePath, T4Config.global_dbRepositoryTemplate);
             string io_dbReposPropTempPath = string.Format("{0}{1}", io_t4TempBasePath, T4Config.global_dbRepositoryPropertyTemplate);
             if (!System.IO.File.Exists(io_dbReposTempPath))
@@ -796,7 +807,7 @@
             if (!System.IO.File.Exists(io_dbReposPropTempPath))
                 return;
 
-            //¼ÓÔØÄ£°æÁ÷
+            //åŠ è½½æ¨¡ç‰ˆæµ
             string tmp_reposContent = string.Empty;
             string tmp_propContent = string.Empty;
             using (StreamReader sr_modelTemp = new StreamReader(io_dbReposTempPath, Encoding.UTF8))
@@ -808,7 +819,7 @@
                 tmp_propContent = sr_propTemp.ReadToEnd();
             }
 
-            //¿ªÊ¼Ñ­»·ËùÓĞ±íºÍÊÓÍ¼¿ªÊ¼¹¹ÔìDBÊı¾İ·ÃÎÊ¾²Ì¬ÊôĞÔ
+            //å¼€å§‹å¾ªç¯æ‰€æœ‰è¡¨å’Œè§†å›¾å¼€å§‹æ„é€ DBæ•°æ®è®¿é—®é™æ€å±æ€§
             var PropListBuilder = new StringBuilder();
             StringBuilder eachPropBuilder;
 
@@ -824,7 +835,7 @@
                 }
             }
 
-            // ¿ªÊ¼Ñ­»·ËùÓĞµÄÊÓÍ¼
+            // å¼€å§‹å¾ªç¯æ‰€æœ‰çš„è§†å›¾
             if (null != viewList)
             {
                 foreach (var item in viewList)
@@ -837,13 +848,13 @@
                 }
             }
 
-            //¿ªÊ¼³õÊ¼»¯Àà
+            //å¼€å§‹åˆå§‹åŒ–ç±»
             StringBuilder classBuilder = new StringBuilder(tmp_reposContent);
             classBuilder.Replace("{#global_namespace#}", T4Config.global_namespace);
             classBuilder.Replace("{#global_dbPrefix#}", T4Config.global_dbPrefix);
             classBuilder.Replace("{#DbRepositoryPropertyTemplate#}", PropListBuilder.ToString());
 
-            //¿ªÊ¼ÔÚÖ¸¶¨Î»ÖÃ½øĞĞ´´½¨»òĞŞ¸ÄÎÄ¼ş
+            //å¼€å§‹åœ¨æŒ‡å®šä½ç½®è¿›è¡Œåˆ›å»ºæˆ–ä¿®æ”¹æ–‡ä»¶
             string io_savePath = string.Format("{0}Biz{1}DbRepository.cs", io_dataBaseDirPath, T4Config.global_dbPrefix);
             byte[] io_saveByte = Encoding.UTF8.GetBytes(classBuilder.ToString());
             using (FileStream fs = new FileStream(io_savePath, FileMode.OpenOrCreate, FileAccess.ReadWrite))
@@ -855,4 +866,4 @@
     }
 
     #endregion
-#>
+}
