@@ -31,7 +31,8 @@ namespace AtomicCore
         { 
             DatabaseType.Mssql2008, 
             DatabaseType.Mysql, 
-            DatabaseType.SQLite 
+            DatabaseType.SQLite,
+            DatabaseType.ClickHouse
         };
 
         #endregion

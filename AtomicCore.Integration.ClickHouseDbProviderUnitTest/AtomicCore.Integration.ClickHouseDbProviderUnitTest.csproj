@@ -27,6 +27,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="connections.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="DataBase\T4\ClickHouseT4.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>ClickHouseT4.txt</LastGenOutput>

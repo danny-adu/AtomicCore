@@ -28,8 +28,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// <param name="findTypes"></param>
         public void Register(ContainerBuilder builder, List<Type> findTypes)
         {
-            builder.RegisterGeneric(typeof(ClickHouseDbProvider<>)).Named(DatabaseType.Mssql2008, typeof(IDbProvider<>)).InstancePerDependency();
-            //builder.RegisterType<ClickHouseDbProcedurer>().Named(DatabaseType.Mssql2008, typeof(IDbProcedurer)).InstancePerDependency();
+            builder.RegisterGeneric(typeof(ClickHouseDbProvider<>)).Named(DatabaseType.ClickHouse, typeof(IDbProvider<>)).InstancePerDependency();
         }
     }
 }

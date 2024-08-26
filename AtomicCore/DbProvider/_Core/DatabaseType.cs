@@ -19,5 +19,10 @@
         /// SQLite
         /// </summary>
         public const string SQLite = "SQLite";
+
+        /// <summary>
+        /// ClickHouse
+        /// </summary>
+        public const string ClickHouse = "ClickHouse";
     }
 }
