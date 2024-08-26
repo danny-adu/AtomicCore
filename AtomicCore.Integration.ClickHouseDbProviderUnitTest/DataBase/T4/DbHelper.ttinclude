@@ -6,7 +6,7 @@
         public const string global_DbName = "default";
         public const string global_namespace = "AtomicCore.Integration.ClickHouseDbProviderUnitTest";
         public const string global_dbPrefix = "ClickHouse";
-        public static string global_ConnStr = $"Host=127.0.0.1;Port=8123;Username={global_DbName};Password=123456;Database=default";
+        public static string global_ConnStr = $"Host=127.0.0.1;Port=8123;Username=default;Password=123456;Database={global_DbName}";
 
         public const string global_modelTemplate = "ModelTemplate.txt";
         public const string global_viewTemplate = "ViewTemplate.txt";
