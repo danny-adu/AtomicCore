@@ -1,11 +1,4 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using AtomicCore.Integration.ClickHouseDbProvider;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using AtomicCore.Integration.ClickHouseDbProviderUnitTest;
+﻿using AtomicCore.Integration.ClickHouseDbProviderUnitTest;
 
 namespace AtomicCore.Integration.ClickHouseDbProvider.Tests
 {
