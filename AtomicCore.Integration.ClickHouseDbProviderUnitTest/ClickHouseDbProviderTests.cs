@@ -22,9 +22,9 @@ namespace AtomicCore.Integration.ClickHouseDbProvider.Tests
         {
             var insResult = BizClickHouseDbRepository.Member_UserBasics.Insert(new Member_UserBasics()
             {
-                UserID = 1,
-                UserName = "kavin",
-                UserAge = 18,
+                UserID = 2,
+                UserName = "danny",
+                UserAge = 21,
                 UserCreateAt = DateTime.Now,
                 UserIsBlock = false
             });

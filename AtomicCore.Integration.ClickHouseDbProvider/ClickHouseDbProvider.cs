@@ -98,115 +98,104 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
                 throw new Exception("dbString is null");
             Type modelT = typeof(M);
 
-            if (model != null)
-            {
-                #region 读取表定义的所有列
-
-                // 获取字段映射
-                DbColumnAttribute[] columns = this._dbMappingHandler.GetDbColumnCollection(modelT);
-                if (null == columns || columns.Length <= 0)
-                {
-                    result.AppendError(string.Format("{0}类型无字段映射", modelT.FullName));
-                    return result;
-                }
-
-                #endregion
-
-                #region 执行SQL插入操作
-
-                DbColumnAttribute[] setFields = columns.Where(d => !d.IsDbGenerated).ToArray();
-                if (setFields.Length > 0)
-                {
-                    #region 拼接Sql语句
-
-                    string tableName = this._dbMappingHandler.GetDbTableName(modelT);
-                    if (!string.IsNullOrEmpty(suffix))
-                        tableName = $"{tableName}{suffix}";
-
-                    StringBuilder sqlBuilder = new StringBuilder("insert into ");
-                    sqlBuilder.Append(FIELD_WRAPPING_PREFIX);
-                    sqlBuilder.Append(tableName);
-                    sqlBuilder.Append(FIELD_WRAPPING_SUFFIX);
-                    sqlBuilder.Append(" (");
-                    foreach (var item in setFields.Select(d => d.DbColumnName))
-                    {
-                        sqlBuilder.Append(FIELD_WRAPPING_PREFIX);
-                        sqlBuilder.Append(item);
-                        sqlBuilder.Append($"{FIELD_WRAPPING_SUFFIX},");
-                    }
-                    sqlBuilder.Replace(",", ")", sqlBuilder.Length - 1, 1);
-                    sqlBuilder.Append(" values ");
-                    sqlBuilder.Append("(");
-                    foreach (var item in setFields)
-                    {
-                        string parameterName = string.Format("{0}", item.DbColumnName);
-                        PropertyInfo p_info = this._dbMappingHandler.GetPropertySingle(modelT, item.DbColumnName);
-                        object param_val = p_info.GetValue(model, null);
-                        param_val = ClickHouseGrammarRule.FormatPropertValue(param_val, p_info);
-                        var dbType = this.GetDbtype(item.DbType);
-                        var param_str = ClickHouseGrammarRule.GetSqlTextByDbType(param_val, dbType);
-
-                        sqlBuilder.Append(param_str);
-                        sqlBuilder.Append(",");
-                    }
-                    sqlBuilder.Remove(sqlBuilder.Length - 1, 1);
-                    sqlBuilder.Append(");");
-
-                    //初始化Debug
-                    result.DebugInit(sqlBuilder, ClickHouseGrammarRule.C_ParamChar, null);
-
-                    #endregion
-
-                    #region 执行Sql语句
-
-                    using (var connection = new ClickHouseConnection(dbString))
-                    {
-                        using (var command = connection.CreateCommand())
-                        {
-                            command.Connection = connection;
-                            command.CommandText = sqlBuilder.ToString();
-
-                            //尝试打开数据库连结
-                            if (this.TryOpenDbConnection(connection, ref result))
-                            {
-                                try
-                                {
-                                    //  由于其列式存储的特点，通常不返回受影响的行数，即使插入成功也是如此
-                                    _ = command.ExecuteNonQuery();
-                                    result.Record = model;
-                                }
-                                catch (Exception ex)
-                                {
-                                    result.Record = default;
-                                    result.AppendException(ex);
-
-                                    command.Dispose();
-                                    connection.Close();
-                                    connection.Dispose();
-
-                                    return result;
-                                }
-                            }
-                        }
-                    }
-
-                    #endregion
-
-                    return result;
-                }
-                else
-                {
-                    result.AppendError("插入的表仅有自增长列或没有指定任何列");
-                    return result;
-                }
-
-                #endregion
-            }
-            else
+            if (null == model)
             {
                 result.AppendError("插入数据时候的Model为空");
                 return result;
             }
+
+            // 获取字段映射
+            DbColumnAttribute[] columns = this._dbMappingHandler.GetDbColumnCollection(modelT);
+            if (null == columns || columns.Length <= 0)
+            {
+                result.AppendError(string.Format("{0}类型无字段映射", modelT.FullName));
+                return result;
+            }
+
+            // 找出需要设置的字段
+            DbColumnAttribute[] setFields = columns.Where(d => !d.IsDbGenerated).ToArray();
+            if (setFields.Length <= 0)
+            {
+                result.AppendError("插入的表仅有自增长列或没有指定任何列");
+                return result;
+            }
+
+            #region 拼接Sql语句
+
+            string tableName = this._dbMappingHandler.GetDbTableName(modelT);
+            if (!string.IsNullOrEmpty(suffix))
+                tableName = $"{tableName}{suffix}";
+
+            StringBuilder sqlBuilder = new StringBuilder("insert into ");
+            sqlBuilder.Append(FIELD_WRAPPING_PREFIX);
+            sqlBuilder.Append(tableName);
+            sqlBuilder.Append(FIELD_WRAPPING_SUFFIX);
+            sqlBuilder.Append(" (");
+            foreach (var item in setFields.Select(d => d.DbColumnName))
+            {
+                sqlBuilder.Append(FIELD_WRAPPING_PREFIX);
+                sqlBuilder.Append(item);
+                sqlBuilder.Append($"{FIELD_WRAPPING_SUFFIX},");
+            }
+            sqlBuilder.Replace(",", ")", sqlBuilder.Length - 1, 1);
+            sqlBuilder.Append(" values ");
+            sqlBuilder.Append("(");
+            foreach (var item in setFields)
+            {
+                string parameterName = string.Format("{0}", item.DbColumnName);
+                PropertyInfo p_info = this._dbMappingHandler.GetPropertySingle(modelT, item.DbColumnName);
+                object param_val = p_info.GetValue(model, null);
+                param_val = ClickHouseGrammarRule.FormatPropertValue(param_val, p_info);
+                var dbType = this.GetDbtype(item.DbType);
+                var param_str = ClickHouseGrammarRule.GetSqlTextByDbType(param_val, dbType);
+
+                sqlBuilder.Append(param_str);
+                sqlBuilder.Append(",");
+            }
+            sqlBuilder.Remove(sqlBuilder.Length - 1, 1);
+            sqlBuilder.Append(");");
+
+            //初始化Debug
+            result.DebugInit(sqlBuilder, ClickHouseGrammarRule.C_ParamChar, null);
+
+            #endregion
+
+            #region 执行Sql语句
+
+            using (var connection = new ClickHouseConnection(dbString))
+            {
+                using (var command = connection.CreateCommand())
+                {
+                    command.Connection = connection;
+                    command.CommandText = sqlBuilder.ToString();
+
+                    //尝试打开数据库连结
+                    if (this.TryOpenDbConnection(connection, ref result))
+                    {
+                        try
+                        {
+                            //  由于其列式存储的特点，通常不返回受影响的行数，即使插入成功也是如此
+                            _ = command.ExecuteNonQuery();
+                            result.Record = model;
+                        }
+                        catch (Exception ex)
+                        {
+                            result.Record = default;
+                            result.AppendException(ex);
+
+                            command.Dispose();
+                            connection.Close();
+                            connection.Dispose();
+
+                            return result;
+                        }
+                    }
+                }
+            }
+
+            #endregion
+
+            return result;
         }
 
         /// <summary>
