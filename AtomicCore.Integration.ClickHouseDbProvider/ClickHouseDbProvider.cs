@@ -9,7 +9,6 @@ using System.Text;
 using System.Threading.Tasks;
 using AtomicCore.DbProvider;
 using ClickHouse.Client.ADO;
-using ClickHouse.Client.ADO.Parameters;
 
 namespace AtomicCore.Integration.ClickHouseDbProvider
 {
@@ -101,7 +100,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
 
             if (model != null)
             {
-                #region 判断主键数量
+                #region 数据结构字段检查
 
                 // 获取字段映射
                 DbColumnAttribute[] columns = this._dbMappingHandler.GetDbColumnCollection(modelT);
@@ -113,8 +112,8 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
 
                 // ClickHouse 不支持自增长主键（auto-increment primary key），
                 // 因为它主要关注的是快速写入和查询性能，而不是行级别的操作
-                DbColumnAttribute[] setPrimaryKeys = columns.Where(d => d.IsDbGenerated).ToArray();
-                if (setPrimaryKeys.Count() > 0)
+                DbColumnAttribute[] auto_increment_cols = columns.Where(d => d.IsDbGenerated).ToArray();
+                if (auto_increment_cols.Length > 0)
                 {
                     result.AppendError("no support for auto-increment primary key");
                     return result;
@@ -126,8 +125,6 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
                 DbColumnAttribute[] setFields = columns.Where(d => !d.IsDbGenerated).ToArray();
                 if (setFields.Length > 0)
                 {
-                    List<DbParameter> parameters = new List<DbParameter>();
-
                     #region 拼接Sql语句
 
                     string tableName = this._dbMappingHandler.GetDbTableName(modelT);
@@ -152,26 +149,19 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
                     {
                         string parameterName = string.Format("{0}", item.DbColumnName);
                         PropertyInfo p_info = this._dbMappingHandler.GetPropertySingle(modelT, item.DbColumnName);
-                        object parameterValue = p_info.GetValue(model, null);
-
+                        object param_val = p_info.GetValue(model, null);
                         var dbType = this.GetDbtype(item.DbType);
 
-                        var paremter = new ClickHouseDbParameter()
-                        {
-                            ParameterName = ClickHouseGrammarRule.GenerateParamName(parameterName),
-                            DbType = dbType,
-                            Value = parameterValue
-                        };
-                        parameters.Add(paremter);
+                        var param_str = ClickHouseGrammarRule.GetSqlTextByDbType(param_val, dbType);
 
-                        sqlBuilder.Append(ClickHouseGrammarRule.GenerateParamName(parameterName));
+                        sqlBuilder.Append(param_str);
                         sqlBuilder.Append(",");
                     }
                     sqlBuilder.Remove(sqlBuilder.Length - 1, 1);
                     sqlBuilder.Append(");");
 
                     //初始化Debug
-                    result.DebugInit(sqlBuilder, ClickHouseGrammarRule.C_ParamChar, parameters.ToArray());
+                    result.DebugInit(sqlBuilder, ClickHouseGrammarRule.C_ParamChar, null);
 
                     #endregion
 
@@ -183,18 +173,16 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
                         {
                             command.Connection = connection;
                             command.CommandText = sqlBuilder.ToString();
-                            foreach (DbParameter item in parameters)
-                                command.Parameters.Add(item);
 
                             //尝试打开数据库连结
                             if (this.TryOpenDbConnection(connection, ref result))
                             {
-                                if (setPrimaryKeys != null && setPrimaryKeys.Length > 0)
+                                if (auto_increment_cols != null && auto_increment_cols.Length > 0)
                                 {
                                     try
                                     {
                                         object dbVal = command.ExecuteScalar();
-                                        PropertyInfo pinfo = this._dbMappingHandler.GetPropertySingle(modelT, setPrimaryKeys.First().DbColumnName);
+                                        PropertyInfo pinfo = this._dbMappingHandler.GetPropertySingle(modelT, auto_increment_cols.First().DbColumnName);
                                         if (pinfo != null && dbVal != DBNull.Value)
                                         {
                                             dbVal = Convert.ChangeType(dbVal, pinfo.PropertyType);

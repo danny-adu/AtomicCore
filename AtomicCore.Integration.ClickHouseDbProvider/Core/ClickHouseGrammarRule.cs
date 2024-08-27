@@ -83,7 +83,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
             if (null == value)
                 throw new ArgumentNullException("value is null");
 
-            string sqlText = null;
+            string sqlText;
             if (value is string)
             {
                 sqlText = string.Format("'{0}'", value);
