@@ -1635,177 +1635,123 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// <param name="model"></param>
         /// <param name="suffix">分表后缀,无分表不传该字段</param>
         /// <returns></returns>
-        public Task<DbSingleRecord<M>> InsertAsync(M model, string suffix = null)
+        public async Task<DbSingleRecord<M>> InsertAsync(M model, string suffix = null)
         {
-            throw new NotImplementedException();
+            DbSingleRecord<M> result = new DbSingleRecord<M>();
 
-            //DbSingleRecord<M> result = new DbSingleRecord<M>();
+            string dbString = this._dbConnectionStringHandler.GetConnection();
+            if (string.IsNullOrEmpty(dbString))
+                throw new Exception("dbString is null");
+            Type modelT = typeof(M);
 
-            //string dbString = this._dbConnectionStringHandler.GetConnection();
-            //if (string.IsNullOrEmpty(dbString))
-            //    throw new Exception("dbString is null");
+            if (null == model)
+            {
+                result.AppendError("插入数据时候的Model为空");
+                return result;
+            }
 
-            //Type modelT = typeof(M);
+            // 获取字段映射
+            DbColumnAttribute[] columns = this._dbMappingHandler.GetDbColumnCollection(modelT);
+            if (null == columns || columns.Length <= 0)
+            {
+                result.AppendError(string.Format("{0}类型无字段映射", modelT.FullName));
+                return result;
+            }
 
-            //if (model != null)
-            //{
-            //    #region 判断主键数量
+            // 找出需要设置的字段
+            DbColumnAttribute[] setFields = columns.Where(d => !d.IsDbGenerated).ToArray();
+            if (setFields.Length <= 0)
+            {
+                result.AppendError("插入的表仅有自增长列或没有指定任何列");
+                return result;
+            }
 
-            //    DbColumnAttribute[] columns = this._dbMappingHandler.GetDbColumnCollection(modelT);
-            //    if (null == columns || columns.Length <= 0)
-            //    {
-            //        result.AppendError(string.Format("{0}类型无字段映射", modelT.FullName));
-            //        return result;
-            //    }
+            #region 拼接Sql语句
 
-            //    DbColumnAttribute[] setPrimaryKeys = columns.Where(d => d.IsDbGenerated).ToArray();
-            //    if (setPrimaryKeys.Count() > 1)
-            //    {
-            //        result.AppendError("暂不允许使用双主键！请设置一列为自增长主键！");
-            //        return result;
-            //    }
+            string tableName = this._dbMappingHandler.GetDbTableName(modelT);
+            if (!string.IsNullOrEmpty(suffix))
+                tableName = $"{tableName}{suffix}";
 
-            //    #endregion
+            StringBuilder sqlBuilder = new StringBuilder("insert into ");
+            sqlBuilder.Append(FIELD_WRAPPING_PREFIX);
+            sqlBuilder.Append(tableName);
+            sqlBuilder.Append(FIELD_WRAPPING_SUFFIX);
+            sqlBuilder.Append(" (");
+            foreach (var item in setFields.Select(d => d.DbColumnName))
+            {
+                sqlBuilder.Append(FIELD_WRAPPING_PREFIX);
+                sqlBuilder.Append(item);
+                sqlBuilder.Append($"{FIELD_WRAPPING_SUFFIX},");
+            }
+            sqlBuilder.Replace(",", ")", sqlBuilder.Length - 1, 1);
+            sqlBuilder.Append(" values ");
+            sqlBuilder.Append("(");
+            foreach (var item in setFields)
+            {
+                string parameterName = string.Format("{0}", item.DbColumnName);
+                PropertyInfo p_info = this._dbMappingHandler.GetPropertySingle(modelT, item.DbColumnName);
+                object param_val = p_info.GetValue(model, null);
+                param_val = ClickHouseGrammarRule.FormatPropertValue(param_val, p_info);
+                var dbType = this.GetDbtype(item.DbType);
+                var param_str = ClickHouseGrammarRule.GetSqlTextByDbType(param_val, dbType);
 
-            //    //需要设置参数插入的字段
-            //    DbColumnAttribute[] setFields = columns.Where(d => !d.IsDbGenerated).ToArray();
-            //    if (setFields.Length > 0)
-            //    {
-            //        List<DbParameter> parameters = new List<DbParameter>();
+                sqlBuilder.Append(param_str);
+                sqlBuilder.Append(",");
+            }
+            sqlBuilder.Remove(sqlBuilder.Length - 1, 1);
+            sqlBuilder.Append(");");
 
-            //        #region 拼接Sql语句
+            //初始化Debug
+            result.DebugInit(sqlBuilder, ClickHouseGrammarRule.C_ParamChar, null);
 
-            //        string tableName = this._dbMappingHandler.GetDbTableName(modelT);
-            //        if (!string.IsNullOrEmpty(suffix))
-            //            tableName = $"{tableName}{suffix}";
+            #endregion
 
-            //        StringBuilder sqlBuilder = new StringBuilder("insert into ");
-            //        sqlBuilder.Append("[");
-            //        sqlBuilder.Append(tableName);
-            //        sqlBuilder.Append("]");
-            //        sqlBuilder.Append(" (");
-            //        foreach (var item in setFields.Select(d => d.DbColumnName))
-            //        {
-            //            sqlBuilder.Append("[");
-            //            sqlBuilder.Append(item);
-            //            sqlBuilder.Append("],");
-            //        }
-            //        sqlBuilder.Replace(",", ")", sqlBuilder.Length - 1, 1);
-            //        sqlBuilder.Append(" values ");
-            //        sqlBuilder.Append("(");
-            //        foreach (var item in setFields)
-            //        {
-            //            string parameterName = string.Format("{0}", item.DbColumnName);
-            //            PropertyInfo p_info = this._dbMappingHandler.GetPropertySingle(modelT, item.DbColumnName);
-            //            object parameterValue = p_info.GetValue(model, null);
+            #region 执行Sql语句
 
-            //            System.Data.SqlDbType dbType = this.GetDbtype(item.DbType);
+            using (DbConnection connection = new ClickHouseConnection(dbString))
+            {
+                using (DbCommand command = connection.CreateCommand())
+                {
+                    command.Connection = connection;
+                    command.CommandText = sqlBuilder.ToString();
 
-            //            DbParameter paremter = new ClickHouseDbParameter(ClickHouseGrammarRule.GenerateParamName(parameterName), dbType);
-            //            paremter.Value = parameterValue;
-            //            parameters.Add(paremter);
+                    // 尝试打开数据库链接
+                    try
+                    {
+                        await connection.OpenAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        result.AppendException(ex);
 
-            //            sqlBuilder.Append(ClickHouseGrammarRule.GenerateParamName(parameterName));
-            //            sqlBuilder.Append(",");
-            //        }
-            //        sqlBuilder.Remove(sqlBuilder.Length - 1, 1);
-            //        sqlBuilder.Append(");");
-            //        sqlBuilder.Append("select SCOPE_IDENTITY();");
+                        await command.DisposeAsync();
+                        await connection.CloseAsync();
+                        await connection.DisposeAsync();
 
-            //        //初始化Debug
-            //        result.DebugInit(sqlBuilder, ClickHouseGrammarRule.C_ParamChar, parameters.ToArray());
+                        return result;
+                    }
 
-            //        #endregion
+                    try
+                    {
+                        _ = await command.ExecuteNonQueryAsync();
+                        result.Record = model;
+                    }
+                    catch (Exception ex)
+                    {
+                        result.AppendException(ex);
 
-            //        #region 执行Sql语句
+                        await command.DisposeAsync();
+                        await connection.CloseAsync();
+                        await connection.DisposeAsync();
 
-            //        using (DbConnection connection = new ClickHouseConnection(dbString))
-            //        {
-            //            using (DbCommand command = new SqlCommand())
-            //            {
-            //                command.Connection = connection;
-            //                command.CommandText = sqlBuilder.ToString();
-            //                foreach (DbParameter item in parameters)
-            //                    command.Parameters.Add(item);
+                        return result;
+                    }
+                }
+            }
 
-            //                // 尝试打开数据库链接
-            //                try
-            //                {
-            //                    await connection.OpenAsync();
-            //                }
-            //                catch (Exception ex)
-            //                {
-            //                    result.AppendException(ex);
+            #endregion
 
-            //                    await command.DisposeAsync();
-            //                    await connection.CloseAsync();
-            //                    await connection.DisposeAsync();
-
-            //                    return result;
-            //                }
-
-            //                // 判断主键个数
-            //                if (setPrimaryKeys != null && setPrimaryKeys.Length > 0)
-            //                {
-            //                    try
-            //                    {
-            //                        object dbVal = await command.ExecuteScalarAsync();
-            //                        PropertyInfo pinfo = this._dbMappingHandler.GetPropertySingle(modelT, setPrimaryKeys.First().DbColumnName);
-            //                        if (pinfo != null && dbVal != DBNull.Value)
-            //                        {
-            //                            dbVal = Convert.ChangeType(dbVal, pinfo.PropertyType);
-            //                            pinfo.SetValue(model, dbVal, null);
-            //                        }
-            //                        result.Record = model;
-            //                    }
-            //                    catch (Exception ex)
-            //                    {
-            //                        result.AppendException(ex);
-
-            //                        await command.DisposeAsync();
-            //                        await connection.CloseAsync();
-            //                        await connection.DisposeAsync();
-
-            //                        return result;
-            //                    }
-            //                }
-            //                else
-            //                {
-            //                    try
-            //                    {
-            //                        int affectedRow = await command.ExecuteNonQueryAsync();
-            //                        if (affectedRow > 0)
-            //                            result.Record = model;
-            //                    }
-            //                    catch (Exception ex)
-            //                    {
-            //                        result.AppendException(ex);
-
-            //                        await command.DisposeAsync();
-            //                        await connection.CloseAsync();
-            //                        await connection.DisposeAsync();
-
-            //                        return result;
-            //                    }
-            //                }
-            //            }
-            //        }
-
-            //        #endregion
-
-            //        return result;
-            //    }
-            //    else
-            //    {
-            //        result.AppendError("插入的表仅有自增长列或没有指定任何列");
-            //        return result;
-            //    }
-            //}
-            //else
-            //{
-            //    result.AppendError("插入数据时候的Model为空");
-            //    return result;
-            //}
+            return result;
         }
 
         /// <summary>

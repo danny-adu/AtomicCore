@@ -31,5 +31,20 @@ namespace AtomicCore.Integration.ClickHouseDbProvider.Tests
 
             Assert.IsTrue(insResult.IsAvailable());
         }
+
+        [TestMethod()]
+        public void InsertAsyncTest()
+        {
+            var insResult = BizClickHouseDbRepository.Member_UserBasics.InsertAsync(new Member_UserBasics()
+            {
+                UserID = 3,
+                UserName = "mary",
+                UserAge = 25,
+                UserCreateAt = DateTime.Now,
+                UserIsBlock = false
+            }).Result;
+
+            Assert.IsTrue(insResult.IsAvailable());
+        }
     }
 }
