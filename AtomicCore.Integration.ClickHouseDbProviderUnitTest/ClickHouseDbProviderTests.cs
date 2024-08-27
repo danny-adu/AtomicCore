@@ -1,6 +1,4 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using AtomicCore.Integration.ClickHouseDbProvider;
-using AtomicCore.Integration.ClickHouseDbProviderUnitTest;
+﻿using AtomicCore.Integration.ClickHouseDbProviderUnitTest;
 
 namespace AtomicCore.Integration.ClickHouseDbProvider.Tests
 {
@@ -74,6 +72,42 @@ namespace AtomicCore.Integration.ClickHouseDbProvider.Tests
             };
 
             var insResult = BizClickHouseDbRepository.Member_UserBasics.InsertBatch(list);
+
+            Assert.IsTrue(insResult.IsAvailable());
+        }
+
+        [TestMethod()]
+        public void InsertBatchAsyncTest()
+        {
+            var list = new List<Member_UserBasics>()
+            {
+                new Member_UserBasics()
+                {
+                    UserID = 7,
+                    UserName = "t7",
+                    UserAge = 25,
+                    UserCreateAt = DateTime.Now,
+                    UserIsBlock = false
+                },
+                new Member_UserBasics()
+                {
+                    UserID = 8,
+                    UserName = "t8",
+                    UserAge = 25,
+                    UserCreateAt = DateTime.Now,
+                    UserIsBlock = false
+                },
+                new Member_UserBasics()
+                {
+                    UserID = 9,
+                    UserName = "t9",
+                    UserAge = 25,
+                    UserCreateAt = DateTime.Now,
+                    UserIsBlock = false
+                }
+            };
+
+            var insResult = BizClickHouseDbRepository.Member_UserBasics.InsertBatchAsync(list).Result;
 
             Assert.IsTrue(insResult.IsAvailable());
         }
