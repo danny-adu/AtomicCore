@@ -258,6 +258,8 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
                     //尝试打开数据库连结
                     if (this.TryOpenDbConnection(connection, ref result))
                     {
+                        // 调用 InitAsync 方法来初始化列名和元数据
+                        bulkCopy.InitAsync().ConfigureAwait(false).GetAwaiter().GetResult();
                         bulkCopy.WriteToServerAsync(dt, System.Threading.CancellationToken.None)
                             .ConfigureAwait(false).GetAwaiter().GetResult();
 
@@ -1766,75 +1768,94 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// <param name="modelList"></param>
         /// <param name="suffix">分表后缀,无分表不传该字段</param>
         /// <returns></returns>
-        public Task<DbCollectionRecord<M>> InsertBatchAsync(IEnumerable<M> modelList, string suffix = null)
+        public async Task<DbCollectionRecord<M>> InsertBatchAsync(IEnumerable<M> modelList, string suffix = null)
         {
-            throw new NotImplementedException();
+            DbCollectionRecord<M> result = new DbCollectionRecord<M>();
 
-            //DbCollectionRecord<M> result = new DbCollectionRecord<M>();
+            if (null == modelList || !modelList.Any())
+                return result;
 
-            //if (null == modelList || !modelList.Any())
-            //    return result;
+            //获取Db数据库链接字符串
+            string dbString = this._dbConnectionStringHandler.GetConnection();
+            if (string.IsNullOrEmpty(dbString))
+                throw new Exception("dbString is null");
 
-            ////获取Db数据库链接字符串
-            //string dbString = this._dbConnectionStringHandler.GetConnection();
-            //if (string.IsNullOrEmpty(dbString))
-            //    throw new Exception("dbString is null");
+            //获取当前模型的类型和DB类型
+            Type modelT = typeof(M);
+            DbColumnAttribute[] columns = this._dbMappingHandler.GetDbColumnCollection(modelT);
 
-            ////获取当前模型的类型和DB类型
-            //Type modelT = typeof(M);
-            //DbColumnAttribute[] columns = this._dbMappingHandler.GetDbColumnCollection(modelT);
+            //构造内存数据表
+            DataTable dt = new DataTable();
+            dt.Columns.AddRange(this._dbMappingHandler.GetPropertyCollection(modelT).Select(s => new DataColumn(this._dbMappingHandler.GetDbColumnSingle(modelT, s.Name).DbColumnName, s.PropertyType)).ToArray());
 
-            ////构造内存数据表
-            //DataTable dt = new DataTable();
-            //dt.Columns.AddRange(this._dbMappingHandler.GetPropertyCollection(modelT).Select(s => new DataColumn(this._dbMappingHandler.GetDbColumnSingle(modelT, s.Name).DbColumnName, s.PropertyType)).ToArray());
+            //开始向虚拟内存表中进行映射
+            foreach (var item in modelList)
+            {
+                DataRow r = dt.NewRow();
 
-            ////开始向虚拟内存表中进行映射
-            //foreach (var item in modelList)
-            //{
-            //    DataRow r = dt.NewRow();
+                foreach (var col in columns)
+                    r[col.DbColumnName] = this._dbMappingHandler.GetPropertySingle(modelT, col.DbColumnName).GetValue(item, null);
 
-            //    foreach (var col in columns)
-            //        r[col.DbColumnName] = this._dbMappingHandler.GetPropertySingle(modelT, col.DbColumnName).GetValue(item, null);
+                dt.Rows.Add(r);
+            }
 
-            //    dt.Rows.Add(r);
-            //}
+            // 获取当前表或试图名
+            string tableName = this._dbMappingHandler.GetDbTableName(modelT);
+            if (!string.IsNullOrEmpty(suffix))
+                tableName = $"{tableName}{suffix}";
 
-            //// 获取表名
-            //string tableName = this._dbMappingHandler.GetDbTableName(modelT);
-            //if (!string.IsNullOrEmpty(suffix))
-            //    tableName = $"{tableName}{suffix}";
+            // 设置列名
+            var col_names = this._dbMappingHandler.GetPropertyCollection(modelT).Select(s => s.Name).ToArray();
 
-            ////开始执行
-            //using (ClickHouseConnection connection = new ClickHouseConnection(dbString))
-            //{
-            //    using (SqlBulkCopy bulkCopy = new SqlBulkCopy(connection,
-            //        SqlBulkCopyOptions.UseInternalTransaction | SqlBulkCopyOptions.FireTriggers, null))
-            //    {
-            //        bulkCopy.DestinationTableName = tableName;
-            //        bulkCopy.BatchSize = dt.Rows.Count;
+            //开始执行
+            using (ClickHouseConnection connection = new ClickHouseConnection(dbString))
+            {
+                using (var bulkCopy = new ClickHouseBulkCopy(connection))
+                {
+                    // 由于.NET Standard 2.1无法使用init进行初始化复制, 所以需要进行反射赋值
+                    bulkCopy.ReflectionSet(tableName, col_names);
 
-            //        // 尝试打开数据库链接,并且执行查询
-            //        try
-            //        {
-            //            await connection.OpenAsync();
-            //            await bulkCopy.WriteToServerAsync(dt);
-            //        }
-            //        catch (Exception ex)
-            //        {
-            //            result.AppendException(ex);
+                    // 设置批量处理数量
+                    bulkCopy.BatchSize = dt.Rows.Count;
 
-            //            bulkCopy.Close();
-            //            await connection.CloseAsync();
-            //            await connection.DisposeAsync();
+                    // 尝试打开数据库链接
+                    try
+                    {
+                        await connection.OpenAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        result.AppendException(ex);
 
-            //            return result;
-            //        }
+                        bulkCopy.Dispose();
+                        await connection.CloseAsync();
+                        await connection.DisposeAsync();
 
-            //        result.Record = new List<M>(modelList);
-            //    }
-            //}
+                        return result;
+                    }
 
-            //return result;
+                    try
+                    {
+                        // 调用 InitAsync 方法来初始化列名和元数据
+                        await bulkCopy.InitAsync();
+                        await bulkCopy.WriteToServerAsync(dt, System.Threading.CancellationToken.None);
+
+                        result.Record = new List<M>(modelList);
+                    }
+                    catch (Exception ex)
+                    {
+                        result.AppendException(ex);
+
+                        bulkCopy.Dispose();
+                        await connection.CloseAsync();
+                        await connection.DisposeAsync();
+
+                        return result;
+                    }
+                }
+            }
+
+            return result;
         }
 
         /// <summary>
