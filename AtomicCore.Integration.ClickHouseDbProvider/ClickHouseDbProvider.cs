@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using AtomicCore.DbProvider;
 using ClickHouse.Client.ADO;
+using ClickHouse.Client.Copy;
 
 namespace AtomicCore.Integration.ClickHouseDbProvider
 {
@@ -206,61 +207,66 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// <returns></returns>
         public DbCollectionRecord<M> InsertBatch(IEnumerable<M> modelList, string suffix = null)
         {
-            throw new NotImplementedException();
+            DbCollectionRecord<M> result = new DbCollectionRecord<M>();
 
-            //DbCollectionRecord<M> result = new DbCollectionRecord<M>();
+            if (null == modelList || !modelList.Any())
+                return result;
 
-            //if (null == modelList || !modelList.Any())
-            //    return result;
+            //获取Db数据库链接字符串
+            string dbString = this._dbConnectionStringHandler.GetConnection();
+            if (string.IsNullOrEmpty(dbString))
+                throw new Exception("dbString is null");
 
-            ////获取Db数据库链接字符串
-            //string dbString = this._dbConnectionStringHandler.GetConnection();
-            //if (string.IsNullOrEmpty(dbString))
-            //    throw new Exception("dbString is null");
+            //获取当前模型的类型和DB类型
+            Type modelT = typeof(M);
+            DbColumnAttribute[] columns = this._dbMappingHandler.GetDbColumnCollection(modelT);
 
-            ////获取当前模型的类型和DB类型
-            //Type modelT = typeof(M);
-            //DbColumnAttribute[] columns = this._dbMappingHandler.GetDbColumnCollection(modelT);
+            //构造内存数据表
+            DataTable dt = new DataTable();
+            dt.Columns.AddRange(this._dbMappingHandler.GetPropertyCollection(modelT).Select(s => new DataColumn(this._dbMappingHandler.GetDbColumnSingle(modelT, s.Name).DbColumnName, s.PropertyType)).ToArray());
 
-            ////构造内存数据表
-            //DataTable dt = new DataTable();
-            //dt.Columns.AddRange(this._dbMappingHandler.GetPropertyCollection(modelT).Select(s => new DataColumn(this._dbMappingHandler.GetDbColumnSingle(modelT, s.Name).DbColumnName, s.PropertyType)).ToArray());
+            //开始向虚拟内存表中进行映射
+            foreach (var item in modelList)
+            {
+                DataRow r = dt.NewRow();
 
-            ////开始向虚拟内存表中进行映射
-            //foreach (var item in modelList)
-            //{
-            //    DataRow r = dt.NewRow();
+                foreach (var col in columns)
+                    r[col.DbColumnName] = this._dbMappingHandler.GetPropertySingle(modelT, col.DbColumnName).GetValue(item, null);
 
-            //    foreach (var col in columns)
-            //        r[col.DbColumnName] = this._dbMappingHandler.GetPropertySingle(modelT, col.DbColumnName).GetValue(item, null);
+                dt.Rows.Add(r);
+            }
 
-            //    dt.Rows.Add(r);
-            //}
+            // 获取当前表或试图名
+            string tableName = this._dbMappingHandler.GetDbTableName(modelT);
+            if (!string.IsNullOrEmpty(suffix))
+                tableName = $"{tableName}{suffix}";
 
-            //// 获取当前表或试图名
-            //string tableName = this._dbMappingHandler.GetDbTableName(modelT);
-            //if (!string.IsNullOrEmpty(suffix))
-            //    tableName = $"{tableName}{suffix}";
+            // 设置列名
+            var col_names = this._dbMappingHandler.GetPropertyCollection(modelT).Select(s => s.Name).ToArray();
 
-            ////开始执行
-            //using (ClickHouseConnection connection = new ClickHouseConnection(dbString))
-            //{
-            //    using (SqlBulkCopy bulkCopy = new SqlBulkCopy(connection, SqlBulkCopyOptions.UseInternalTransaction | SqlBulkCopyOptions.FireTriggers, null))
-            //    {
-            //        bulkCopy.DestinationTableName = tableName;
-            //        bulkCopy.BatchSize = dt.Rows.Count;
+            //开始执行
+            using (ClickHouseConnection connection = new ClickHouseConnection(dbString))
+            {
+                using (var bulkCopy = new ClickHouseBulkCopy(connection))
+                {
+                    // 由于.NET Standard 2.1无法使用init进行初始化复制, 所以需要进行反射赋值
+                    bulkCopy.ReflectionSet(tableName, col_names);
 
-            //        //尝试打开数据库连结
-            //        if (this.TryOpenDbConnection(connection, ref result))
-            //        {
-            //            bulkCopy.WriteToServer(dt);
+                    // 设置批量处理数量
+                    bulkCopy.BatchSize = dt.Rows.Count;
 
-            //            result.Record = new List<M>(modelList);
-            //        }
-            //    }
-            //}
+                    //尝试打开数据库连结
+                    if (this.TryOpenDbConnection(connection, ref result))
+                    {
+                        bulkCopy.WriteToServerAsync(dt, System.Threading.CancellationToken.None)
+                            .ConfigureAwait(false).GetAwaiter().GetResult();
 
-            //return result;
+                        result.Record = new List<M>(modelList);
+                    }
+                }
+            }
+
+            return result;
         }
 
         /// <summary>
