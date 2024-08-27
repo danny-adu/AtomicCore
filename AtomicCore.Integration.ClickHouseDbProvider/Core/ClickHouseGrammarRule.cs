@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data;
+using System.Reflection;
 
 namespace AtomicCore.Integration.ClickHouseDbProvider
 {
@@ -42,6 +43,20 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
             if (string.IsNullOrEmpty(pName))
                 throw new Exception("name is null");
             return string.Format("{0}{1}", C_ParamChar, pName);
+        }
+
+        /// <summary>
+        /// 格式化属性值
+        /// </summary>
+        /// <param name="pv"></param>
+        /// <param name="pi"></param>
+        /// <returns></returns>
+        public static object FormatPropertValue(object pv, PropertyInfo pi)
+        {
+            if ("System.DateTime" == pi.PropertyType.FullName && pv is DateTime dt)
+                return dt.ToString("yyyy-MM-dd HH:mm:ss");
+
+            return pv;
         }
 
         /// <summary>

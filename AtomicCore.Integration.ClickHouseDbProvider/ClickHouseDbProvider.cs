@@ -100,7 +100,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
 
             if (model != null)
             {
-                #region 数据结构字段检查
+                #region 读取表定义的所有列
 
                 // 获取字段映射
                 DbColumnAttribute[] columns = this._dbMappingHandler.GetDbColumnCollection(modelT);
@@ -110,18 +110,10 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
                     return result;
                 }
 
-                // ClickHouse 不支持自增长主键（auto-increment primary key），
-                // 因为它主要关注的是快速写入和查询性能，而不是行级别的操作
-                DbColumnAttribute[] auto_increment_cols = columns.Where(d => d.IsDbGenerated).ToArray();
-                if (auto_increment_cols.Length > 0)
-                {
-                    result.AppendError("no support for auto-increment primary key");
-                    return result;
-                }
-
                 #endregion
 
-                //需要设置参数插入的字段
+                #region 执行SQL插入操作
+
                 DbColumnAttribute[] setFields = columns.Where(d => !d.IsDbGenerated).ToArray();
                 if (setFields.Length > 0)
                 {
@@ -150,8 +142,8 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
                         string parameterName = string.Format("{0}", item.DbColumnName);
                         PropertyInfo p_info = this._dbMappingHandler.GetPropertySingle(modelT, item.DbColumnName);
                         object param_val = p_info.GetValue(model, null);
+                        param_val = ClickHouseGrammarRule.FormatPropertValue(param_val, p_info);
                         var dbType = this.GetDbtype(item.DbType);
-
                         var param_str = ClickHouseGrammarRule.GetSqlTextByDbType(param_val, dbType);
 
                         sqlBuilder.Append(param_str);
@@ -177,50 +169,22 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
                             //尝试打开数据库连结
                             if (this.TryOpenDbConnection(connection, ref result))
                             {
-                                if (auto_increment_cols != null && auto_increment_cols.Length > 0)
+                                try
                                 {
-                                    try
-                                    {
-                                        object dbVal = command.ExecuteScalar();
-                                        PropertyInfo pinfo = this._dbMappingHandler.GetPropertySingle(modelT, auto_increment_cols.First().DbColumnName);
-                                        if (pinfo != null && dbVal != DBNull.Value)
-                                        {
-                                            dbVal = Convert.ChangeType(dbVal, pinfo.PropertyType);
-                                            pinfo.SetValue(model, dbVal, null);
-                                        }
-                                        result.Record = model;
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        result.Record = default;
-                                        result.AppendException(ex);
-
-                                        command.Dispose();
-                                        connection.Close();
-                                        connection.Dispose();
-
-                                        return result;
-                                    }
+                                    //  由于其列式存储的特点，通常不返回受影响的行数，即使插入成功也是如此
+                                    _ = command.ExecuteNonQuery();
+                                    result.Record = model;
                                 }
-                                else
+                                catch (Exception ex)
                                 {
-                                    try
-                                    {
-                                        int affectedRow = command.ExecuteNonQuery();
-                                        if (affectedRow > 0)
-                                            result.Record = model;
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        result.Record = default;
-                                        result.AppendException(ex);
+                                    result.Record = default;
+                                    result.AppendException(ex);
 
-                                        command.Dispose();
-                                        connection.Close();
-                                        connection.Dispose();
+                                    command.Dispose();
+                                    connection.Close();
+                                    connection.Dispose();
 
-                                        return result;
-                                    }
+                                    return result;
                                 }
                             }
                         }
@@ -235,6 +199,8 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
                     result.AppendError("插入的表仅有自增长列或没有指定任何列");
                     return result;
                 }
+
+                #endregion
             }
             else
             {
