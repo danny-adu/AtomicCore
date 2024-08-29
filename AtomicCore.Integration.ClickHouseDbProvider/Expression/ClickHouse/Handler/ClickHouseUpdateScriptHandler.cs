@@ -58,13 +58,18 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
             }
             else
             {
-                //如果不包含参数，则直接计算出更新的值
-                string paramName = ClickHouseGrammarRule.GetUniqueIdentifier();
-                string paramText = ClickHouseGrammarRule.GenerateParamName(paramName);
+                //如果不包含参数，则直接计算出更新的值(ClickHouse不支持参数化查询，所以这里直接拼接即可)
                 object updateValue = ExpressionCalculater.GetValue(assignment.Expression);
+                var rightTextFragment = ClickHouseGrammarRule.GetSqlText(updateValue);
+                this._result.AddFieldMember(assignment.Member, rightTextFragment);
 
-                ClickHouseParameterDesc item = new ClickHouseParameterDesc(paramName, updateValue);
-                this._result.AddFieldMember(assignment.Member, paramText, new List<ClickHouseParameterDesc>() { item });
+
+                ////string paramName = ClickHouseGrammarRule.GetUniqueIdentifier();
+                ////string paramText = ClickHouseGrammarRule.GenerateParamName(paramName);
+                ////object updateValue = ExpressionCalculater.GetValue(assignment.Expression);
+
+                ////ClickHouseParameterDesc item = new ClickHouseParameterDesc(paramName, updateValue);
+                ////this._result.AddFieldMember(assignment.Member, paramText, new List<ClickHouseParameterDesc>() { item });
             }
 
             return base.VisitMemberAssignment(assignment);
