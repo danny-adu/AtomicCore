@@ -1,4 +1,6 @@
-﻿using AtomicCore.Integration.ClickHouseDbProviderUnitTest;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using AtomicCore.Integration.ClickHouseDbProvider;
+using AtomicCore.Integration.ClickHouseDbProviderUnitTest;
 
 namespace AtomicCore.Integration.ClickHouseDbProvider.Tests
 {
@@ -110,6 +112,17 @@ namespace AtomicCore.Integration.ClickHouseDbProvider.Tests
             var insResult = BizClickHouseDbRepository.Member_UserBasics.InsertBatchAsync(list).Result;
 
             Assert.IsTrue(insResult.IsAvailable());
+        }
+
+        [TestMethod()]
+        public void UpdateTest()
+        {
+            var result = BizClickHouseDbRepository.Member_UserBasics.Update(d => d.UserID == 1, up => new Member_UserBasics()
+            {
+                UserIsBlock = true
+            });
+
+            Assert.IsTrue(result.IsAvailable());
         }
     }
 }

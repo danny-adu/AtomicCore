@@ -67,14 +67,16 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
                         }
                         else
                         {
-                            #region 如果不包含参数，则直接进行值计算
+                            #region 如果不包含参数，则直接进行值计算（ClickHouse不支持参数化查询, 所以这里需要改造）
 
                             object objValue = ExpressionCalculater.GetValue(itemExp);
+                            parseList.Add(ClickHouseGrammarRule.GetSqlText(objValue));
 
-                            string paramName = ClickHouseGrammarRule.GetUniqueIdentifier();
-                            string valueText = ClickHouseGrammarRule.GenerateParamName(paramName);
-                            parseList.Add(valueText);
-                            result.Parameters.Add(new ClickHouseParameterDesc(paramName, objValue));
+
+                            ////string paramName = ClickHouseGrammarRule.GetUniqueIdentifier();
+                            ////string valueText = ClickHouseGrammarRule.GenerateParamName(paramName);
+                            ////parseList.Add(valueText);
+                            ////result.Parameters.Add(new ClickHouseParameterDesc(paramName, objValue));
 
                             #endregion
                         }
