@@ -921,147 +921,129 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// <returns></returns>
         public DbSingleRecord<M> Fetch(Expression<Func<IDbFetchQueryable<M>, IDbFetchQueryable<M>>> exp, string suffix = null)
         {
-            throw new NotImplementedException();
+            DbSingleRecord<M> result = new DbSingleRecord<M>();
 
-            //DbSingleRecord<M> result = new DbSingleRecord<M>();
+            string dbString = this._dbConnectionStringHandler.GetConnection();
+            if (string.IsNullOrEmpty(dbString))
+                throw new Exception("dbString is null");
 
-            //string dbString = this._dbConnectionStringHandler.GetConnection();
-            //if (string.IsNullOrEmpty(dbString))
-            //    throw new Exception("dbString is null");
+            Type modelT = typeof(M);
+            DbColumnAttribute[] columns = this._dbMappingHandler.GetDbColumnCollection(modelT);
 
-            //Type modelT = typeof(M);
-            //ClickHouseSentenceResult resolveResult = null;
-            //List<DbParameter> parameters = new List<DbParameter>();
+            ClickHouseSentenceResult resolveResult = null;
+            List<DbParameter> parameters = new List<DbParameter>();
 
-            //#region 解析表达式条件
+            #region 解析表达式条件
 
-            //if (exp != null)
-            //{
-            //    resolveResult = ClickHouseSentenceHandler.ExecuteResolver(exp, this._dbMappingHandler);
-            //    if (!resolveResult.IsAvailable())
-            //    {
-            //        result.CopyStatus(resolveResult);
-            //        return result;
-            //    }
-            //}
+            if (exp != null)
+            {
+                resolveResult = ClickHouseSentenceHandler.ExecuteResolver(exp, this._dbMappingHandler);
+                if (!resolveResult.IsAvailable())
+                {
+                    result.CopyStatus(resolveResult);
+                    return result;
+                }
+            }
 
-            //#endregion
+            #endregion
 
-            //#region 拼接SQL语句
+            #region 拼接SQL语句
 
-            //// 获取当前表或试图名
-            //string tableName = this._dbMappingHandler.GetDbTableName(modelT);
-            //if (!string.IsNullOrEmpty(suffix))
-            //    tableName = $"{tableName}{suffix}";
+            // 获取当前表或试图名
+            string tableName = this._dbMappingHandler.GetDbTableName(modelT);
+            if (!string.IsNullOrEmpty(suffix))
+                tableName = $"{tableName}{suffix}";
 
-            //StringBuilder sqlBuilder = new StringBuilder("select top 1 ");
-            //if (resolveResult == null)
-            //{
-            //    sqlBuilder.Append(" * from ");
-            //    sqlBuilder.Append("[");
-            //    sqlBuilder.Append(tableName);
-            //    sqlBuilder.Append("]");
-            //}
-            //else
-            //{
-            //    #region 指定需要查询的字段
+            StringBuilder sqlBuilder = new StringBuilder("select ");
+            if (resolveResult == null)
+            {
+                string all_cols = string.Join(',', columns.Select(s => $"{ClickHouseGrammarRule.GenerateFieldWrapped(s.DbColumnName)}"));
 
-            //    if (resolveResult.SqlSelectFields == null || resolveResult.SqlSelectFields.Count() <= 0)
-            //    {
-            //        //如果没有设置要查询的字段，默认查询所有
-            //        DbColumnAttribute[] fields = this._dbMappingHandler.GetDbColumnCollection(modelT);
+                sqlBuilder.Append(all_cols);
+                sqlBuilder.Append(" from ");
+                sqlBuilder.Append(ClickHouseGrammarRule.GenerateTableWrapped(tableName));
+            }
+            else
+            {
+                #region 指定需要查询的字段
 
-            //        foreach (var item in fields)
-            //            resolveResult.SetSelectField(new ClickHouseSelectField
-            //            {
-            //                DBFieldAsName = item.DbColumnName,
-            //                DBSelectFragment = item.DbColumnName,
-            //                IsModelProperty = true
-            //            });
-            //    }
-            //    foreach (var item in resolveResult.SqlSelectFields)
-            //        if (item.IsModelProperty)
-            //        {
-            //            sqlBuilder.Append("[");
-            //            sqlBuilder.Append(item.DBSelectFragment);
-            //            sqlBuilder.Append("]");
-            //            sqlBuilder.Append(" as ");
-            //            sqlBuilder.Append("[");
-            //            sqlBuilder.Append(item.DBFieldAsName);
-            //            sqlBuilder.Append("]");
-            //            sqlBuilder.Append(",");
-            //        }
+                if (resolveResult.SqlSelectFields == null || resolveResult.SqlSelectFields.Count() <= 0)
+                {
+                    //如果没有设置要查询的字段，默认查询所有
+                    foreach (var item in columns)
+                        resolveResult.SetSelectField(new ClickHouseSelectField
+                        {
+                            DBFieldAsName = item.DbColumnName,
+                            DBSelectFragment = item.DbColumnName,
+                            IsModelProperty = true
+                        });
+                }
 
-            //    sqlBuilder.Replace(",", "", sqlBuilder.Length - 1, 1);
-            //    sqlBuilder.Append(" from ");
-            //    sqlBuilder.Append("[");
-            //    sqlBuilder.Append(tableName);
-            //    sqlBuilder.Append("] ");
+                string all_cols = string.Join(',', resolveResult.SqlSelectFields.Select(s => $"{ClickHouseGrammarRule.GenerateFieldWrapped(s.DBSelectFragment)}"));
 
-            //    #endregion
+                sqlBuilder.Append(all_cols);
+                sqlBuilder.Append(" from ");
+                sqlBuilder.Append(ClickHouseGrammarRule.GenerateTableWrapped(tableName));
 
-            //    #region 指定Where条件
+                #endregion
 
-            //    if (!string.IsNullOrEmpty(resolveResult.SqlWhereConditionText))
-            //    {
-            //        sqlBuilder.Append(" where ");
-            //        sqlBuilder.Append(resolveResult.SqlWhereConditionText);
-            //    }
+                #region 指定Where条件
 
-            //    //装载参数
-            //    if (resolveResult.SqlQuerylParameters != null && resolveResult.SqlQuerylParameters.Count() > 0)
-            //        foreach (var item in resolveResult.SqlQuerylParameters)
-            //            parameters.Add(new ClickHouseDbParameter(item.Name, item.Value));
+                if (!string.IsNullOrEmpty(resolveResult.SqlWhereConditionText))
+                {
+                    sqlBuilder.Append(" where ");
+                    sqlBuilder.Append(resolveResult.SqlWhereConditionText);
+                }
 
-            //    #endregion
+                #endregion
 
-            //    #region 指定Order条件
+                #region 指定Order条件
 
-            //    if (!string.IsNullOrEmpty(resolveResult.SqlOrderConditionText))
-            //    {
-            //        sqlBuilder.Append(" order by ");
-            //        sqlBuilder.Append(resolveResult.SqlOrderConditionText);
-            //    }
+                if (!string.IsNullOrEmpty(resolveResult.SqlOrderConditionText))
+                {
+                    sqlBuilder.Append(" order by ");
+                    sqlBuilder.Append(resolveResult.SqlOrderConditionText);
+                }
 
-            //    #endregion
-            //}
-            //sqlBuilder.Append(";");
+                #endregion
+            }
+            sqlBuilder.Append(";");
 
-            ////初始化Debug
-            //result.DebugInit(sqlBuilder, ClickHouseGrammarRule.C_ParamChar, parameters.ToArray());
+            //初始化Debug
+            result.DebugInit(sqlBuilder, ClickHouseGrammarRule.C_ParamChar, parameters.ToArray());
 
-            //#endregion
+            #endregion
 
-            //#region 执行Sql语句
+            #region 执行Sql语句
 
-            //using (DbConnection connection = new ClickHouseConnection(dbString))
-            //{
-            //    using (DbCommand command = new SqlCommand())
-            //    {
-            //        command.Connection = connection;
-            //        command.CommandText = sqlBuilder.ToString();
-            //        if (parameters.Count > 0)
-            //            foreach (var item in parameters)
-            //                command.Parameters.Add(item);
+            using (DbConnection connection = new ClickHouseConnection(dbString))
+            {
+                using (DbCommand command = connection.CreateCommand())
+                {
+                    command.Connection = connection;
+                    command.CommandText = sqlBuilder.ToString();
+                    if (parameters.Count > 0)
+                        foreach (var item in parameters)
+                            command.Parameters.Add(item);
 
-            //        //尝试打开数据库连结
-            //        if (this.TryOpenDbConnection(connection, ref result))
-            //        {
-            //            //尝试执行SQL语句
-            //            DbDataReader reader = this.TryExecuteReader(command, ref result);
-            //            if (reader != null && reader.HasRows && reader.Read())
-            //            {
-            //                result.Record = this.AutoFillModel(reader, modelT, resolveResult.SqlSelectFields);
-            //                //释放资源，关闭连结
-            //                this.DisposeReader(reader);
-            //            }
-            //        }
-            //    }
-            //}
+                    //尝试打开数据库连结
+                    if (this.TryOpenDbConnection(connection, ref result))
+                    {
+                        //尝试执行SQL语句
+                        DbDataReader reader = this.TryExecuteReader(command, ref result);
+                        if (reader != null && reader.HasRows && reader.Read())
+                        {
+                            result.Record = this.AutoFillModel(reader, modelT, resolveResult.SqlSelectFields);
+                            //释放资源，关闭连结
+                            this.DisposeReader(reader);
+                        }
+                    }
+                }
+            }
 
-            //#endregion
+            #endregion
 
-            //return result;
+            return result;
         }
 
         /// <summary>

@@ -17,12 +17,12 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// <summary>
         /// 表格包裹格式(Sql语法中使用[]号将表名进行包裹，防止关键字命名冲突)
         /// </summary>
-        public const string C_TableWrappedFormat = "[{0}]";
+        public const string C_TableWrappedFormat = "`{0}`";
 
         /// <summary>
         /// 字段包裹格式(Sql语法中使用[]号将字段名进行包裹，防止关键字命名冲突)
         /// </summary>
-        public const string C_FieldWrappedFormat = "[{0}]";
+        public const string C_FieldWrappedFormat = "`{0}`";
 
         /// <summary>
         /// 返回Guid完全不重复的ID标识

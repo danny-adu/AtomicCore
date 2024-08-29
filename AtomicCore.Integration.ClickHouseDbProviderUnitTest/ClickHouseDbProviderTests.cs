@@ -124,5 +124,21 @@ namespace AtomicCore.Integration.ClickHouseDbProvider.Tests
 
             Assert.IsTrue(result.IsAvailable());
         }
+
+        [TestMethod()]
+        public void DeleteTest()
+        {
+            var result = BizClickHouseDbRepository.Member_UserBasics.Delete(d => d.UserID == 1);
+
+            Assert.IsTrue(result.IsAvailable());
+        }
+
+        [TestMethod()]
+        public void FetchTest()
+        {
+            var result = BizClickHouseDbRepository.Member_UserBasics.Fetch(o => o.Where(d => d.UserID == 1));
+
+            Assert.IsTrue(result.IsAvailable());
+        }
     }
 }
