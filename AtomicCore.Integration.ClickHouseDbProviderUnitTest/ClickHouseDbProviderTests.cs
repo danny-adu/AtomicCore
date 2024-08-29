@@ -136,7 +136,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider.Tests
         [TestMethod()]
         public void FetchTest()
         {
-            var result = BizClickHouseDbRepository.Member_UserBasics.Fetch(o => o.Where(d => d.UserID == 1));
+            var result = BizClickHouseDbRepository.Member_UserBasics.Fetch(o => o.Where(d => d.UserID == 1).OrderBy(d => d.UserID));
 
             Assert.IsTrue(result.IsAvailable());
         }

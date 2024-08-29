@@ -992,7 +992,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
 
                 #endregion
             }
-            sqlBuilder.Append(";");
+            sqlBuilder.Append(" limit 1;");
 
             //初始化Debug
             result.DebugInit(sqlBuilder, ClickHouseGrammarRule.C_ParamChar, parameters.ToArray());
