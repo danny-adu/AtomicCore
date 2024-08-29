@@ -9,7 +9,6 @@ using System.Text;
 using System.Threading.Tasks;
 using AtomicCore.DbProvider;
 using ClickHouse.Client.ADO;
-using ClickHouse.Client.ADO.Parameters;
 using ClickHouse.Client.Copy;
 
 namespace AtomicCore.Integration.ClickHouseDbProvider
@@ -22,16 +21,6 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         where M : IDbModel, new()
     {
         #region Constructors
-
-        /// <summary>
-        /// 字段包装前缀
-        /// </summary>
-        private const char FIELD_WRAPPING_PREFIX = '`';
-
-        /// <summary>
-        /// 字段包装后缀
-        /// </summary>
-        private const char FIELD_WRAPPING_SUFFIX = '`';
 
         /// <summary>
         /// 数据库连接字符串
@@ -129,16 +118,12 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
                 tableName = $"{tableName}{suffix}";
 
             StringBuilder sqlBuilder = new StringBuilder("insert into ");
-            sqlBuilder.Append(FIELD_WRAPPING_PREFIX);
-            sqlBuilder.Append(tableName);
-            sqlBuilder.Append(FIELD_WRAPPING_SUFFIX);
+            sqlBuilder.Append(ClickHouseGrammarRule.GenerateTableWrapped(tableName));
             sqlBuilder.Append(" (");
-            foreach (var item in setFields.Select(d => d.DbColumnName))
-            {
-                sqlBuilder.Append(FIELD_WRAPPING_PREFIX);
-                sqlBuilder.Append(item);
-                sqlBuilder.Append($"{FIELD_WRAPPING_SUFFIX},");
-            }
+
+            foreach (var field in setFields.Select(d => $"{ClickHouseGrammarRule.GenerateFieldWrapped(d.DbColumnName)}"))
+                sqlBuilder.Append(field);
+
             sqlBuilder.Replace(",", ")", sqlBuilder.Length - 1, 1);
             sqlBuilder.Append(" values ");
             sqlBuilder.Append("(");
@@ -363,7 +348,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
                 tableName = $"{tableName}{suffix}";
 
             StringBuilder sqlBuilder = new StringBuilder();
-            sqlBuilder.Append($"update {FIELD_WRAPPING_PREFIX}{tableName}{FIELD_WRAPPING_SUFFIX} set ");
+            sqlBuilder.Append($"update {ClickHouseGrammarRule.GenerateTableWrapped(tableName)} set ");
             foreach (var item in updatePropertyResult.FieldMembers)
             {
                 //自增长的自动跳过
@@ -372,7 +357,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
 
                 string cur_field = colums.First(d => d.PropertyNameMapping == item.PropertyItem.Name).DbColumnName;
 
-                sqlBuilder.Append($"{FIELD_WRAPPING_PREFIX}{cur_field}{FIELD_WRAPPING_SUFFIX}={item.UpdateTextFragment},");
+                sqlBuilder.Append($"{ClickHouseGrammarRule.GenerateFieldWrapped(cur_field)}={item.UpdateTextFragment},");
             }
             sqlBuilder.Replace(",", " ", sqlBuilder.Length - 1, 1);
             if (whereResult != null)
@@ -1642,16 +1627,12 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
                 tableName = $"{tableName}{suffix}";
 
             StringBuilder sqlBuilder = new StringBuilder("insert into ");
-            sqlBuilder.Append(FIELD_WRAPPING_PREFIX);
-            sqlBuilder.Append(tableName);
-            sqlBuilder.Append(FIELD_WRAPPING_SUFFIX);
+            sqlBuilder.Append(ClickHouseGrammarRule.GenerateTableWrapped(tableName));
             sqlBuilder.Append(" (");
-            foreach (var item in setFields.Select(d => d.DbColumnName))
-            {
-                sqlBuilder.Append(FIELD_WRAPPING_PREFIX);
-                sqlBuilder.Append(item);
-                sqlBuilder.Append($"{FIELD_WRAPPING_SUFFIX},");
-            }
+
+            foreach (var field in setFields.Select(d => $"{ClickHouseGrammarRule.GenerateFieldWrapped(d.DbColumnName)}"))
+                sqlBuilder.Append(field);
+
             sqlBuilder.Replace(",", ")", sqlBuilder.Length - 1, 1);
             sqlBuilder.Append(" values ");
             sqlBuilder.Append("(");
