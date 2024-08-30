@@ -213,5 +213,16 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
             }
             return sqlVal;
         }
+
+        /// <summary>
+        /// 对一段SQL表单时进行函数调用包装
+        /// </summary>
+        /// <param name="expression">sql表达式</param>
+        /// <param name="defval">默认值</param>
+        /// <returns></returns>
+        public static string IsNullSqlWrapped(string expression, object defval = null)
+        {
+            return $"ifnull({expression},{defval ?? "0"})";
+        }
     }
 }

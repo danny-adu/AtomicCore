@@ -1338,8 +1338,15 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
 
             StringBuilder sqlBuilder = new StringBuilder("select ");
 
-            foreach (var item in resolveResult.SqlSelectFields.OrderBy(d => d.IsModelProperty).OrderBy(d => d.DBFieldAsName))
-                sqlBuilder.Append($"{ClickHouseGrammarRule.GenerateFieldWrapped(item.DBSelectFragment)},");
+            foreach (var item in resolveResult.SqlSelectFields.OrderBy(d => d.IsModelProperty).OrderBy(d => d.DBFieldAsName).OrderByDescending(d => d.IsModelProperty))
+            {
+                if (item.IsModelProperty)
+                    // 说明是表字段
+                    sqlBuilder.Append($"{ClickHouseGrammarRule.GenerateFieldWrapped(item.DBSelectFragment)} as {item.DBFieldAsName},");
+                else
+                    // 说明是运算函数等
+                    sqlBuilder.Append($"{item.DBSelectFragment} as {item.DBFieldAsName},");
+            }
 
             sqlBuilder.Replace(",", "", sqlBuilder.Length - 1, 1);
             sqlBuilder.Append(" from ");

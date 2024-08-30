@@ -269,7 +269,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
                             {
                                 ClickHouseSelectField item = new ClickHouseSelectField();
                                 item.DBFieldAsName = string.IsNullOrEmpty(aliasValue) ? ("count_" + (this._count_asNameIndex++)) : aliasValue;
-                                item.DBSelectFragment = "isnull(count(" + tempQuery + "),0)";
+                                item.DBSelectFragment = $"{ClickHouseGrammarRule.IsNullSqlWrapped($"count({tempQuery})")}";
                                 this._result.SetSelectField(item);
                             }
                         }
@@ -316,7 +316,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
                             {
                                 ClickHouseSelectField item = new ClickHouseSelectField();
                                 item.DBFieldAsName = string.IsNullOrEmpty(aliasValue) ? ("sum_" + (this._sum_asNameIndex++)) : aliasValue;
-                                item.DBSelectFragment = "isnull(sum(" + tempQuery + "),0)";
+                                item.DBSelectFragment = $"{ClickHouseGrammarRule.IsNullSqlWrapped($"sum({tempQuery})")}";
                                 this._result.SetSelectField(item);
                             }
                         }
@@ -362,7 +362,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
                             {
                                 ClickHouseSelectField item = new ClickHouseSelectField();
                                 item.DBFieldAsName = string.IsNullOrEmpty(aliasValue) ? ("max_" + (this._max_asNameIndex++)) : aliasValue;
-                                item.DBSelectFragment = "isnull(max(" + tempQuery + "),0)";
+                                item.DBSelectFragment = $"{ClickHouseGrammarRule.IsNullSqlWrapped($"max({tempQuery})")}";
                                 this._result.SetSelectField(item);
                             }
                         }
@@ -408,7 +408,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
                             {
                                 ClickHouseSelectField item = new ClickHouseSelectField();
                                 item.DBFieldAsName = string.IsNullOrEmpty(aliasValue) ? ("min_" + (this._min_asNameIndex++)) : aliasValue;
-                                item.DBSelectFragment = "isnull(min(" + tempQuery + "),0)";
+                                item.DBSelectFragment = $"{ClickHouseGrammarRule.IsNullSqlWrapped($"min({tempQuery})")}";
                                 this._result.SetSelectField(item);
                             }
                         }

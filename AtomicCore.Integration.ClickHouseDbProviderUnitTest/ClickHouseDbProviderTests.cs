@@ -148,5 +148,21 @@ namespace AtomicCore.Integration.ClickHouseDbProvider.Tests
 
             Assert.IsTrue(result.IsAvailable());
         }
+
+        [TestMethod()]
+        public void CalculateTest()
+        {
+            var result = BizClickHouseDbRepository.Member_UserBasics.Calculate(o => o
+                .Select(s => new Member_UserBasics()
+                {
+                    UserID = s.UserID
+                })
+                .Max(d => d.UserAge, nameof(Member_UserBasics.UserAge))
+                .Where(d => d.UserID > 0)
+                .GroupBy(g => g.UserID)
+                .OrderBy(d => d.UserID));
+
+            Assert.IsTrue(result.IsAvailable());
+        }
     }
 }
