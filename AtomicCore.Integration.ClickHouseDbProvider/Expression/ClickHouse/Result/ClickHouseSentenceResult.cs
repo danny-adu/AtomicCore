@@ -147,15 +147,10 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         public void SetSelectField(ClickHouseSelectField field)
         {
             if (field == null)
-            {
                 this.AppendError("被指定的查询字段不允许为null");
-            }
             else
             {
-                if (this._sqlSelectFields == null)
-                {
-                    this._sqlSelectFields = new List<ClickHouseSelectField>();
-                }
+                this._sqlSelectFields ??= new List<ClickHouseSelectField>();
                 this._sqlSelectFields.Add(field);
             }
         }
@@ -167,15 +162,10 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         public void SetSelectField(IEnumerable<ClickHouseSelectField> fields)
         {
             if (fields == null || fields.Count() <= 0)
-            {
                 this.AppendError("必须指定1~多个被查询字段");
-            }
             else
             {
-                if (this._sqlSelectFields == null)
-                {
-                    this._sqlSelectFields = new List<ClickHouseSelectField>();
-                }
+                this._sqlSelectFields ??= new List<ClickHouseSelectField>();
                 this._sqlSelectFields.AddRange(fields);
             }
         }
@@ -199,18 +189,12 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         {
             if (!string.IsNullOrEmpty(whereText))
             {
-                if (this._sqlWhereConditionBuilder == null)
-                {
-                    this._sqlWhereConditionBuilder = new StringBuilder();
-                }
+                this._sqlWhereConditionBuilder ??= new StringBuilder();
                 this._sqlWhereConditionBuilder.Append(whereText);
             }
             if (parameters != null)
             {
-                if (this._sqlQuerylParameters == null)
-                {
-                    this._sqlQuerylParameters = new List<ClickHouseParameterDesc>();
-                }
+                this._sqlQuerylParameters ??= new List<ClickHouseParameterDesc>();
                 this._sqlQuerylParameters.AddRange(parameters);
             }
         }
@@ -222,22 +206,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// <param name="isAsc">是否是正序</param>
         public void SetOrderCondition(string fieldName, bool isAsc)
         {
-            this._sqlOrderConditionList.Insert(0, string.Format(" {0} {1}", fieldName, isAsc ? "asc" : "desc"));
-
-            //if (this._sqlOrderConditionBuilder == null)
-            //{
-            //    this._sqlOrderConditionBuilder = new StringBuilder(" ");
-            //    this._sqlOrderConditionBuilder.Append(fieldName);
-            //    this._sqlOrderConditionBuilder.Append(" ");
-            //    this._sqlOrderConditionBuilder.Append(isAsc ? "asc" : "desc");
-            //}
-            //else
-            //{
-            //    this._sqlOrderConditionBuilder.Append(",");
-            //    this._sqlOrderConditionBuilder.Append(fieldName);
-            //    this._sqlOrderConditionBuilder.Append(" ");
-            //    this._sqlOrderConditionBuilder.Append(isAsc ? "asc" : "desc");
-            //}
+            this._sqlOrderConditionList.Insert(0, string.Format(" {0} {1}", ClickHouseGrammarRule.GenerateFieldWrapped(fieldName), isAsc ? "asc" : "desc"));
         }
 
         /// <summary>
