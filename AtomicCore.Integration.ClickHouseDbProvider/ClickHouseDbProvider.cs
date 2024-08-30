@@ -422,7 +422,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// <returns></returns>
         public DbNonRecord Update(Expression<Func<M, bool>> whereExp, M model, string suffix = null)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("ClickHouse Not Supported");
 
             //DbNonRecord result = new DbNonRecord();
 
@@ -577,7 +577,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// <returns></returns>
         public DbNonRecord UpdateTask(IEnumerable<DbUpdateTaskData<M>> taskList, bool enableSqlTransaction = false, string suffix = null)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("ClickHouse Not Supported");
 
             //DbNonRecord result = new DbNonRecord();
 
@@ -1663,7 +1663,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// <returns></returns>
         public Task<DbNonRecord> UpdateAsync(Expression<Func<M, bool>> whereExp, Expression<Func<M, M>> updatePropertys, string suffix = null)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("ClickHouse Not Supported");
 
             //DbNonRecord result = new DbNonRecord();
 
@@ -1854,7 +1854,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// <returns></returns>
         public Task<DbNonRecord> UpdateAsync(Expression<Func<M, bool>> whereExp, M model, string suffix = null)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("ClickHouse Not Supported");
 
             //DbNonRecord result = new DbNonRecord();
 
@@ -2023,7 +2023,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// <returns></returns>
         public Task<DbNonRecord> UpdateTaskAsync(IEnumerable<DbUpdateTaskData<M>> taskList, bool enableSqlTransaction = false, string suffix = null)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("ClickHouse Not Supported");
 
             //DbNonRecord result = new DbNonRecord();
 
@@ -2245,7 +2245,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// <returns></returns>
         public Task<DbNonRecord> DeleteAsync(Expression<Func<M, bool>> deleteExp, string suffix = null)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("ClickHouse Not Supported");
 
             //DbNonRecord result = new DbNonRecord();
 
