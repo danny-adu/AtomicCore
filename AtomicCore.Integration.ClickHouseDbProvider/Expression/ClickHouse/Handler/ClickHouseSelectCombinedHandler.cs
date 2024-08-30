@@ -9,7 +9,7 @@ using AtomicCore.DbProvider;
 namespace AtomicCore.Integration.ClickHouseDbProvider
 {
     /// <summary>
-    /// SqlServicer中解析需要select的内容架构解析
+    /// sql中解析需要select的内容架构解析
     /// </summary>
     internal sealed class ClickHouseSelectCombinedHandler : ExpressionVisitorBase
     {

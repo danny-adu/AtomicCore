@@ -6,7 +6,7 @@ using AtomicCore.DbProvider;
 namespace AtomicCore.Integration.ClickHouseDbProvider
 {
     /// <summary>
-    /// Mssql语句脚本解析
+    /// sql语句脚本解析
     /// </summary>
     internal class ClickHouseSentenceHandler : ExpressionVisitorBase
     {

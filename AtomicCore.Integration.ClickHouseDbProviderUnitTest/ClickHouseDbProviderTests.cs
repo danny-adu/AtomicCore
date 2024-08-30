@@ -119,7 +119,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider.Tests
         {
             var result = BizClickHouseDbRepository.Member_UserBasics.Update(d => d.UserID == 1, up => new Member_UserBasics()
             {
-                UserIsBlock = true
+                UserAge = up.UserAge + 1
             });
 
             Assert.IsTrue(result.IsAvailable());
@@ -128,7 +128,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider.Tests
         [TestMethod()]
         public void DeleteTest()
         {
-            var result = BizClickHouseDbRepository.Member_UserBasics.Delete(d => d.UserID == 1);
+            var result = BizClickHouseDbRepository.Member_UserBasics.Delete(d => d.UserID == 2);
 
             Assert.IsTrue(result.IsAvailable());
         }

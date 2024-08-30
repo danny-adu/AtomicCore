@@ -785,117 +785,100 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// <returns></returns>
         public DbNonRecord Delete(Expression<Func<M, bool>> deleteExp, string suffix = null)
         {
-            throw new NotImplementedException();
+            DbNonRecord result = new DbNonRecord();
+            if (null == deleteExp)
+            {
+                result.AppendError("不允许传入null条件进行删除，此行为属于非法行为！");
+                return result;
+            }
 
-            //DbNonRecord result = new DbNonRecord();
+            string dbString = this._dbConnectionStringHandler.GetConnection();
+            if (string.IsNullOrEmpty(dbString))
+                throw new Exception("dbString is null");
 
-            //string dbString = this._dbConnectionStringHandler.GetConnection();
-            //if (string.IsNullOrEmpty(dbString))
-            //    throw new Exception("dbString is null");
+            Type modelT = typeof(M);
 
-            //Type modelT = typeof(M);
-            //if (deleteExp != null)
-            //{
-            //    Expression where_func_lambdaExp;
+            #region 解析条件语句
 
-            //    #region 解析条件语句
+            Expression where_func_lambdaExp;
+            if (deleteExp is LambdaExpression)
+            {
+                //在方法参数上直接写条件
+                where_func_lambdaExp = deleteExp;
+            }
+            else if (deleteExp is MemberExpression)
+            {
+                //通过条件组合的模式
+                object lambdaObject = ExpressionCalculater.GetValue(deleteExp);
+                where_func_lambdaExp = lambdaObject as Expression;
+            }
+            else
+            {
+                result.AppendError("尚未实现直接解析" + deleteExp.NodeType.ToString() + "的特例");
+                return result;
+            }
 
-            //    if (deleteExp is LambdaExpression)
-            //    {
-            //        //在方法参数上直接写条件
-            //        where_func_lambdaExp = deleteExp;
-            //    }
-            //    else if (deleteExp is MemberExpression)
-            //    {
-            //        //通过条件组合的模式
-            //        object lambdaObject = ExpressionCalculater.GetValue(deleteExp);
-            //        where_func_lambdaExp = lambdaObject as Expression;
-            //    }
-            //    else
-            //    {
-            //        result.AppendError("尚未实现直接解析" + deleteExp.NodeType.ToString() + "的特例");
-            //        return result;
-            //    }
+            //执行where解析
+            ClickHouseWhereScriptResult whereResult = ClickHouseWhereScriptHandler.ExecuteResolver(where_func_lambdaExp, this._dbMappingHandler, false);
+            if (!whereResult.IsAvailable())
+            {
+                result.CopyStatus(whereResult);
+                return result;
+            }
 
-            //    //执行where解析
-            //    ClickHouseWhereScriptResult whereResult = ClickHouseWhereScriptHandler.ExecuteResolver(where_func_lambdaExp, this._dbMappingHandler, false);
-            //    if (!whereResult.IsAvailable())
-            //    {
-            //        result.CopyStatus(whereResult);
-            //        return result;
-            //    }
+            #endregion
 
-            //    #endregion
+            #region 拼接Sql语句
 
-            //    #region 拼接Sql语句
+            // 获取当前表或试图名
+            string tableName = this._dbMappingHandler.GetDbTableName(modelT);
+            if (!string.IsNullOrEmpty(suffix))
+                tableName = $"{tableName}{suffix}";
 
-            //    // 获取当前表或试图名
-            //    string tableName = this._dbMappingHandler.GetDbTableName(modelT);
-            //    if (!string.IsNullOrEmpty(suffix))
-            //        tableName = $"{tableName}{suffix}";
+            // 这只适用于批量删除，不适合频繁的行级别操作
+            StringBuilder sqlBuilder = new StringBuilder($"alter table {ClickHouseGrammarRule.GenerateTableWrapped(tableName)} delete where {whereResult.TextScript};");
 
-            //    List<DbParameter> parameters = new List<DbParameter>();
-            //    StringBuilder sqlBuilder = new StringBuilder("delete from ");
-            //    sqlBuilder.Append("[");
-            //    sqlBuilder.Append(tableName);
-            //    sqlBuilder.Append("]");
-            //    sqlBuilder.Append(" where ");
-            //    sqlBuilder.Append(whereResult.TextScript);
-            //    foreach (var item in whereResult.Parameters)
-            //    {
-            //        DbParameter cur_parameter = new ClickHouseDbParameter(item.Name, item.Value);
-            //        parameters.Add(cur_parameter);
-            //    }
-            //    sqlBuilder.Append(";");
+            // 删除前查询可能会受影响函数（不准确）
 
-            //    //初始化Debug
-            //    result.DebugInit(sqlBuilder, ClickHouseGrammarRule.C_ParamChar, parameters.ToArray());
+            //初始化Debug
+            result.DebugInit(sqlBuilder, ClickHouseGrammarRule.C_ParamChar);
 
-            //    #endregion
+            #endregion
 
-            //    #region 开始执行Sql语句
+            #region 开始执行Sql语句
 
-            //    using (DbConnection connection = new ClickHouseConnection(dbString))
-            //    {
-            //        using (DbCommand command = new SqlCommand())
-            //        {
-            //            command.Connection = connection;
-            //            command.CommandText = sqlBuilder.ToString();
-            //            foreach (DbParameter item in parameters)
-            //            {
-            //                command.Parameters.Add(item);
-            //            }
-            //            //尝试打开数据库连结
-            //            if (this.TryOpenDbConnection(connection, ref result))
-            //            {
-            //                try
-            //                {
-            //                    result.AffectedRow = command.ExecuteNonQuery();
-            //                }
-            //                catch (Exception ex)
-            //                {
-            //                    result.AppendError("sql语句执行异常," + command.CommandText);
-            //                    result.AppendException(ex);
+            using (DbConnection connection = new ClickHouseConnection(dbString))
+            {
+                using (DbCommand command = connection.CreateCommand())
+                {
+                    command.Connection = connection;
+                    command.CommandText = sqlBuilder.ToString();
 
-            //                    command.Dispose();
-            //                    connection.Close();
-            //                    connection.Dispose();
+                    //尝试打开数据库连结
+                    if (this.TryOpenDbConnection(connection, ref result))
+                    {
+                        try
+                        {
+                            result.AffectedRow = command.ExecuteNonQuery();
+                        }
+                        catch (Exception ex)
+                        {
+                            result.AppendError("sql语句执行异常," + command.CommandText);
+                            result.AppendException(ex);
 
-            //                    return result;
-            //                }
-            //            }
-            //        }
-            //    }
+                            command.Dispose();
+                            connection.Close();
+                            connection.Dispose();
 
-            //    #endregion
+                            return result;
+                        }
+                    }
+                }
+            }
 
-            //    return result;
-            //}
-            //else
-            //{
-            //    result.AppendError("不允许传入null条件进行删除，此行为属于非法行为！");
-            //    return result;
-            //}
+            #endregion
+
+            return result;
         }
 
         /// <summary>

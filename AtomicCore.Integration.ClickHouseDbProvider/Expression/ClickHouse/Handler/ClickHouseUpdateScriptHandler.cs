@@ -5,7 +5,7 @@ using AtomicCore.DbProvider;
 namespace AtomicCore.Integration.ClickHouseDbProvider
 {
     /// <summary>
-    /// SqlServer下解析需要被Update的字段
+    /// sql下解析需要被Update的字段
     /// </summary>
     internal class ClickHouseUpdateScriptHandler : ExpressionVisitorBase
     {

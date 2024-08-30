@@ -11,7 +11,7 @@ using AtomicCore.DbProvider;
 namespace AtomicCore.Integration.ClickHouseDbProvider
 {
     /// <summary>
-    /// SqlSerivce下处理表达式中常量与参数并存的表达式解析，解析的结果为 sql的表达式（例如：[字段名称]+1）
+    /// sql下处理表达式中常量与参数并存的表达式解析，解析的结果为 sql的表达式（例如：[字段名称]+1）
     /// </summary>
     internal class ClickHouseConditionNodeHandler : ExpressionVisitorBase
     {
@@ -66,14 +66,14 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
 
             string leftValueText;
             string rightValueText;
-            List<ClickHouseParameterDesc> leftParamsList;
-            List<ClickHouseParameterDesc> rightParamsList;
+            //List<ClickHouseParameterDesc> leftParamsList;
+            //List<ClickHouseParameterDesc> rightParamsList;
 
             #region 判断左节点是否包含参数
 
             if (ExpressionCalculater.IsExistsParameters(node.Left))
             {
-                ClickHouseConditionNodeResult leftNodeConditonResult = ClickHouseConditionNodeHandler.ExecuteResolver(this.DBMapperProvider, node.Left, this._isFieldWithTableName);
+                ClickHouseConditionNodeResult leftNodeConditonResult = ExecuteResolver(this.DBMapperProvider, node.Left, this._isFieldWithTableName);
                 if (!leftNodeConditonResult.IsAvailable())
                 {
                     this.Result.CopyStatus(leftNodeConditonResult);
@@ -82,16 +82,22 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
                 }
 
                 leftValueText = leftNodeConditonResult.TextValue;
-                leftParamsList = new List<ClickHouseParameterDesc>(leftNodeConditonResult.Parameters);
+                //leftParamsList = new List<ClickHouseParameterDesc>(leftNodeConditonResult.Parameters);
             }
             else
             {
+                // 直接拼接
                 object leftObjectValue = ExpressionCalculater.GetValue(node.Left);
+                leftValueText = ClickHouseGrammarRule.GetSqlText(leftObjectValue);
 
-                string paramName = ClickHouseGrammarRule.GetUniqueIdentifier();
-                leftValueText = ClickHouseGrammarRule.GenerateParamName(paramName);
-                leftParamsList = new List<ClickHouseParameterDesc>();
-                leftParamsList.Add(new ClickHouseParameterDesc(paramName, leftObjectValue));
+
+                // clickhouse 不支持参数化
+                //string paramName = ClickHouseGrammarRule.GetUniqueIdentifier();
+                //leftValueText = ClickHouseGrammarRule.GenerateParamName(paramName);
+                //leftParamsList = new List<ClickHouseParameterDesc>
+                //{
+                //    new ClickHouseParameterDesc(paramName, leftObjectValue)
+                //};
             }
 
             #endregion
@@ -100,7 +106,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
 
             if (ExpressionCalculater.IsExistsParameters(node.Right))
             {
-                ClickHouseConditionNodeResult rightNodeConditonResult = ClickHouseConditionNodeHandler.ExecuteResolver(this.DBMapperProvider, node.Right, this._isFieldWithTableName);
+                ClickHouseConditionNodeResult rightNodeConditonResult = ExecuteResolver(this.DBMapperProvider, node.Right, this._isFieldWithTableName);
                 if (!rightNodeConditonResult.IsAvailable())
                 {
                     this.Result.CopyStatus(rightNodeConditonResult);
@@ -109,16 +115,19 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
                 }
 
                 rightValueText = rightNodeConditonResult.TextValue;
-                rightParamsList = new List<ClickHouseParameterDesc>(rightNodeConditonResult.Parameters);
+                //rightParamsList = new List<ClickHouseParameterDesc>(rightNodeConditonResult.Parameters);
             }
             else
             {
+                // 同类直接拼接
                 object rightObjectValue = ExpressionCalculater.GetValue(node.Right);
+                rightValueText = ClickHouseGrammarRule.GetSqlText(rightObjectValue);
 
-                string paramName = ClickHouseGrammarRule.GetUniqueIdentifier();
-                rightValueText = ClickHouseGrammarRule.GenerateParamName(paramName);
-                rightParamsList = new List<ClickHouseParameterDesc>();
-                rightParamsList.Add(new ClickHouseParameterDesc(paramName, rightObjectValue));
+                // clickhouse 不支持参数化
+                //string paramName = ClickHouseGrammarRule.GetUniqueIdentifier();
+                //rightValueText = ClickHouseGrammarRule.GenerateParamName(paramName);
+                //rightParamsList = new List<ClickHouseParameterDesc>();
+                //rightParamsList.Add(new ClickHouseParameterDesc(paramName, rightObjectValue));
             }
 
             #endregion
@@ -147,8 +156,8 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
 
             #region 组合参数
 
-            this.Result.InsertParameterRange(0, leftParamsList);
-            this.Result.InsertParameterRange(0, rightParamsList);
+            //this.Result.InsertParameterRange(0, leftParamsList);
+            //this.Result.InsertParameterRange(0, rightParamsList);
 
             #endregion
 

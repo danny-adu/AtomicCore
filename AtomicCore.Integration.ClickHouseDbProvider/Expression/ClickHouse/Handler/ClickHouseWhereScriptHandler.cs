@@ -6,7 +6,7 @@ using AtomicCore.DbProvider;
 namespace AtomicCore.Integration.ClickHouseDbProvider
 {
     /// <summary>
-    /// SqlServer的where条件脚本解析对象(中间协调调度类)
+    /// sql的where条件脚本解析对象(中间协调调度类)
     /// (重构组合調用Mssql2008ConditionCombinedHandler与Mssql2008ConditionNodeHandler)
     /// </summary>
     internal static class ClickHouseWhereScriptHandler
@@ -61,7 +61,8 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
                                 result.CopyStatus(cur_node);
 
                             parseList.Add(cur_node.TextValue);
-                            result.Parameters.InsertRange(0, cur_node.Parameters);
+                            if (cur_node.Parameters.Any())
+                                result.Parameters.InsertRange(0, cur_node.Parameters);
 
                             #endregion
                         }
@@ -71,7 +72,6 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
 
                             object objValue = ExpressionCalculater.GetValue(itemExp);
                             parseList.Add(ClickHouseGrammarRule.GetSqlText(objValue));
-
 
                             ////string paramName = ClickHouseGrammarRule.GetUniqueIdentifier();
                             ////string valueText = ClickHouseGrammarRule.GenerateParamName(paramName);

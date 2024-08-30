@@ -17,7 +17,7 @@ using AtomicCore.DbProvider;
 namespace AtomicCore.Integration.ClickHouseDbProvider
 {
     /// <summary>
-    /// SqlService中Where表达式语句架构解析, 文本模版 与 占位符与表达式集合
+    /// sql中Where表达式语句架构解析, 文本模版 与 占位符与表达式集合
     /// </summary>
     internal class ClickHouseConditionCombinedHandler : ExpressionVisitorBase
     {
