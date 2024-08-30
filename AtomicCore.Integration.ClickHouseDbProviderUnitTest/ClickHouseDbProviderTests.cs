@@ -140,5 +140,13 @@ namespace AtomicCore.Integration.ClickHouseDbProvider.Tests
 
             Assert.IsTrue(result.IsAvailable());
         }
+
+        [TestMethod()]
+        public void FetchListTest()
+        {
+            var result = BizClickHouseDbRepository.Member_UserBasics.FetchList(o => o.Where(d => d.UserID > 0).OrderBy(d => d.UserID));
+
+            Assert.IsTrue(result.IsAvailable());
+        }
     }
 }
