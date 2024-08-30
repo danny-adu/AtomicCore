@@ -839,6 +839,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
             StringBuilder sqlBuilder = new StringBuilder($"alter table {ClickHouseGrammarRule.GenerateTableWrapped(tableName)} delete where {whereResult.TextScript};");
 
             // 删除前查询可能会受影响函数（不准确）
+            StringBuilder countBuilder = new StringBuilder($"select count(*) from {ClickHouseGrammarRule.GenerateTableWrapped(tableName)} where {whereResult.TextScript};");
 
             //初始化Debug
             result.DebugInit(sqlBuilder, ClickHouseGrammarRule.C_ParamChar);
@@ -857,9 +858,28 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
                     //尝试打开数据库连结
                     if (this.TryOpenDbConnection(connection, ref result))
                     {
+                        // 执行待删除的数据
                         try
                         {
-                            result.AffectedRow = command.ExecuteNonQuery();
+                            command.CommandText = countBuilder.ToString();
+                            result.AffectedRow = Convert.ToInt32(command.ExecuteScalar());
+                        }
+                        catch (Exception ex)
+                        {
+                            result.AppendError("sql语句执行异常," + command.CommandText);
+                            result.AppendException(ex);
+
+                            command.Dispose();
+                            connection.Close();
+                            connection.Dispose();
+
+                            return result;
+                        }
+
+                        // 执行真实数据删除
+                        try
+                        {
+                            command.ExecuteNonQuery();
                         }
                         catch (Exception ex)
                         {
