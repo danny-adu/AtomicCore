@@ -4,7 +4,7 @@ using System.Reflection;
 namespace AtomicCore.Integration.ClickHouseDbProvider
 {
     /// <summary>
-    /// SqlServer下需要被修改的属性项
+    /// ClickHouse下需要被修改的属性项
     /// </summary>
     internal sealed class ClickHouseUpdateField
     {

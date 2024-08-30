@@ -1,7 +1,7 @@
 ﻿namespace AtomicCore.Integration.ClickHouseDbProvider
 {
     /// <summary>
-    /// SqlServer下Model属性与查询使用的字段的映射关系对象
+    /// ClickHouse下Model属性与查询使用的字段的映射关系对象
     /// </summary>
     internal sealed class ClickHouseSelectField
     {

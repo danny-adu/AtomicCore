@@ -5,7 +5,7 @@ using System.Reflection;
 namespace AtomicCore.Integration.ClickHouseDbProvider
 {
     /// <summary>
-    /// SqlServer语法规则定义类
+    /// ClickHouse - 语法规则定义类
     /// </summary>
     internal static class ClickHouseGrammarRule
     {

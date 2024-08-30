@@ -5,7 +5,7 @@ using AtomicCore.DbProvider;
 namespace AtomicCore.Integration.ClickHouseDbProvider
 {
     /// <summary>
-    /// Mssql存储过程执行输入参数类
+    /// 存储过程执行输入参数类
     /// </summary>
     public sealed class ClickHouseDbExecuteInput : DbExecuteInputBase
     {

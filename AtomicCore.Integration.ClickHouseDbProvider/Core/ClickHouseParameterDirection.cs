@@ -3,7 +3,7 @@
 namespace AtomicCore.Integration.ClickHouseDbProvider
 {
     /// <summary>
-    /// Mssql参数类型枚举定义
+    /// ClickHouse - 参数类型枚举定义
     /// </summary>
     [Flags]
     public enum ClickHouseParameterDirection
@@ -26,6 +26,6 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// <summary>
         /// 参数既能输入，也能输出
         /// </summary>
-        InputOutput = ClickHouseParameterDirection.Input | ClickHouseParameterDirection.Output
+        InputOutput = Input | Output
     }
 }

@@ -1,7 +1,7 @@
 ﻿namespace AtomicCore.Integration.ClickHouseDbProvider
 {
     /// <summary>
-    /// Mssql参数定义描述
+    /// ClickHouse - 参数定义描述
     /// </summary>
     internal class ClickHouseParameterDesc
     {

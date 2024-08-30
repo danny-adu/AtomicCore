@@ -1,7 +1,7 @@
 ﻿namespace AtomicCore.Integration.ClickHouseDbProvider
 {
     /// <summary>
-    /// click-house db model
+    /// ClickHouse - 数据模型接口定义接口
     /// </summary>
     public interface IClickHouseDbModel
     {
