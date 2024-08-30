@@ -2575,408 +2575,295 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// <param name="exp">查询表达式</param>
         /// <param name="suffix">分表后缀,无分表不传该字段</param>
         /// <returns></returns>
-        public Task<DbCollectionRecord<M>> FetchListAsync(Expression<Func<IDbFetchListQueryable<M>, IDbFetchListQueryable<M>>> exp, string suffix = null)
+        public async Task<DbCollectionRecord<M>> FetchListAsync(Expression<Func<IDbFetchListQueryable<M>, IDbFetchListQueryable<M>>> exp, string suffix = null)
         {
-            throw new NotImplementedException();
-
-            //DbCollectionRecord<M> result = new DbCollectionRecord<M>();
-
-            //string dbString = this._dbConnectionStringHandler.GetConnection();
-            //if (string.IsNullOrEmpty(dbString))
-            //    throw new Exception("dbString is null");
-
-            //Type modelT = typeof(M);
-            //DbColumnAttribute[] columns = this._dbMappingHandler.GetDbColumnCollection(modelT);
-            //if (null == columns || columns.Length <= 0)
-            //{
-            //    result.AppendError(string.Format("类型{0}未映射对上任何字段", modelT.FullName));
-            //    return result;
-            //}
+            DbCollectionRecord<M> result = new DbCollectionRecord<M>();
+
+            string dbString = this._dbConnectionStringHandler.GetConnection();
+            if (string.IsNullOrEmpty(dbString))
+                throw new Exception("dbString is null");
+
+            Type modelT = typeof(M);
+            DbColumnAttribute[] columns = this._dbMappingHandler.GetDbColumnCollection(modelT);
+            if (null == columns || columns.Length <= 0)
+            {
+                result.AppendError(string.Format("类型{0}未映射对上任何字段", modelT.FullName));
+                return result;
+            }
 
-            //ClickHouseSentenceResult resolveResult = null;
-            //List<DbParameter> parameters = new List<DbParameter>();
-            //int currentPage = 0;
-            //int pageSize = 0;
-
-            //#region 解析表达式条件
-
-            //if (exp != null)
-            //{
-            //    resolveResult = ClickHouseSentenceHandler.ExecuteResolver(exp, this._dbMappingHandler);
-            //    if (!resolveResult.IsAvailable())
-            //    {
-            //        result.CopyStatus(resolveResult);
-            //        return result;
-            //    }
-            //}
-
-            //#endregion
-
-            //#region 拼接SQL语句
-
-            //string tableName = this._dbMappingHandler.GetDbTableName(modelT);
-            //if (!string.IsNullOrEmpty(suffix))
-            //    tableName = $"{tableName}{suffix}";
-
-            //bool count_from_list = false;
-            //StringBuilder countBuilder = new StringBuilder();
-            //StringBuilder queryBuilder = new StringBuilder("select ");
-
-            //if (resolveResult == null)
-            //{
-            //    #region 初始化查询分析中间对象
-
-            //    // 初始化保证该不为空（下面查询出数据后封装model会用）
-            //    resolveResult = ClickHouseSentenceResult.Create();
-
-            //    // 设置分页参数
-            //    currentPage = ClickHouseSentenceResult.DEFAULT_CURRENTPAGE;
-            //    pageSize = ClickHouseSentenceResult.DEFAULT_PAGESIZE;
-            //    resolveResult.SetPageCondition(currentPage, pageSize);
-
-            //    //设置检索的全字段，默认查询所有
-            //    foreach (var item in columns)
-            //        resolveResult.SetSelectField(new ClickHouseSelectField
-            //        {
-            //            DBFieldAsName = item.DbColumnName,
-            //            DBSelectFragment = item.DbColumnName,
-            //            IsModelProperty = true
-            //        });
-
-            //    #endregion
-
-            //    #region 强制设置数据结果集统计从列表中加载
-
-            //    // 指示数据集从list加载
-            //    count_from_list = true;
-
-            //    #endregion
-
-            //    #region 拼接构造查询语句(是否需要加载top关键字)
-
-            //    // 已经是默认的分页索引和页码
-            //    queryBuilder.Append(" top ");
-            //    queryBuilder.Append(pageSize);
-            //    queryBuilder.Append(" * from ");
-            //    queryBuilder.Append("[");
-            //    queryBuilder.Append(tableName);
-            //    queryBuilder.Append("]");
-            //    queryBuilder.Append(";");
-
-            //    #endregion
-            //}
-            //else
-            //{
-            //    #region 读取分页参数
-
-            //    // 参数读取
-            //    currentPage = resolveResult.SqlPagerCondition.Key;
-            //    pageSize = resolveResult.SqlPagerCondition.Value;
-
-            //    // 检查分页参数的非法与合理性
-            //    if (currentPage < 1)
-            //        currentPage = ClickHouseSentenceResult.DEFAULT_CURRENTPAGE;
-            //    if (pageSize < 1)
-            //        pageSize = ClickHouseSentenceResult.DEFAULT_PAGESIZE;
-
-            //    #endregion
-
-            //    #region 特殊情况处理（若currpage=1并且pageSize=int.MaxValue,那么就是查询所有的数据,所以可设置不启动分页）
-
-            //    bool enablePaging = true;
-            //    if (1 == currentPage && int.MaxValue == pageSize)
-            //        enablePaging = false;
-
-            //    #endregion
-
-            //    #region 启用分页则需要根据条件查询总数量(拼接构造统计语句)
-
-            //    if (enablePaging)
-            //    {
-            //        countBuilder.Append("select count(1) from ");
-            //        countBuilder.Append("[");
-            //        countBuilder.Append(tableName);
-            //        countBuilder.Append("] ");
-            //        if (!string.IsNullOrEmpty(resolveResult.SqlWhereConditionText))
-            //        {
-            //            countBuilder.Append(" where ");
-            //            countBuilder.Append(resolveResult.SqlWhereConditionText);
-            //        }
-            //        countBuilder.Append(";");
-            //    }
-            //    else
-            //        count_from_list = true; // 指示数据集从list加载
-
-            //    #endregion
-
-            //    #region 拼接构造查询语句
-
-            //    //第一页起始数据
-            //    if (currentPage == 1)
-            //    {
-            //        #region 设置头N条数据
-
-            //        if (pageSize < int.MaxValue)
-            //        {
-            //            queryBuilder.Append(" top ");
-            //            queryBuilder.Append(pageSize);
-            //            queryBuilder.Append(" ");
-            //        }
-
-            //        #endregion
-
-            //        #region 指定需要查询的字段
-
-            //        if (resolveResult.SqlSelectFields == null || resolveResult.SqlSelectFields.Count() <= 0)
-            //        {
-            //            //如果没有设置要查询的字段，默认查询所有
-            //            foreach (var item in columns)
-            //                resolveResult.SetSelectField(new ClickHouseSelectField
-            //                {
-            //                    DBFieldAsName = item.DbColumnName,
-            //                    DBSelectFragment = item.DbColumnName,
-            //                    IsModelProperty = true
-            //                });
-            //        }
-            //        foreach (var item in resolveResult.SqlSelectFields)
-            //        {
-            //            if (item.IsModelProperty)
-            //            {
-            //                queryBuilder.Append("[");
-            //                queryBuilder.Append(item.DBSelectFragment);
-            //                queryBuilder.Append("]");
-            //                queryBuilder.Append(" as ");
-            //                queryBuilder.Append("[");
-            //                queryBuilder.Append(item.DBFieldAsName);
-            //                queryBuilder.Append("]");
-            //                queryBuilder.Append(",");
-            //            }
-            //        }
-            //        queryBuilder.Replace(",", "", queryBuilder.Length - 1, 1);
-            //        queryBuilder.Append(" from ");
-            //        queryBuilder.Append("[");
-            //        queryBuilder.Append(tableName);
-            //        queryBuilder.Append("] ");
-
-            //        #endregion
-
-            //        #region 指定Where条件
-
-            //        if (!string.IsNullOrEmpty(resolveResult.SqlWhereConditionText))
-            //        {
-            //            queryBuilder.Append(" where ");
-            //            queryBuilder.Append(resolveResult.SqlWhereConditionText);
-            //        }
-            //        if (resolveResult.SqlQuerylParameters != null && resolveResult.SqlQuerylParameters.Count() > 0)
-            //            foreach (var item in resolveResult.SqlQuerylParameters)
-            //                parameters.Add(new ClickHouseDbParameter(item.Name, item.Value));
-
-            //        #endregion
-
-            //        #region 指定Order条件
-
-            //        if (!string.IsNullOrEmpty(resolveResult.SqlOrderConditionText))
-            //        {
-            //            queryBuilder.Append(" order by ");
-            //            queryBuilder.Append(resolveResult.SqlOrderConditionText);
-            //        }
-
-            //        #endregion
-            //    }
-            //    //第N页数据
-            //    else
-            //    {
-            //        // 准备开始拼接开窗函数
-            //        queryBuilder.Append(" * from (");
-            //        queryBuilder.Append("select row_number() over (order by ");
-
-            //        #region 指定排序
-
-            //        if (string.IsNullOrEmpty(resolveResult.SqlOrderConditionText))
-            //        {
-            //            //设置主键倒序排序
-            //            IEnumerable<string> pks = columns.Where(d => d.IsDbPrimaryKey).Select(d => d.DbColumnName);
-            //            foreach (var item in pks)
-            //            {
-            //                queryBuilder.Append("[");
-            //                queryBuilder.Append(item);
-            //                queryBuilder.Append("]");
-            //                queryBuilder.Append(" desc,");
-            //            }
-            //            queryBuilder.Replace(",", string.Empty, queryBuilder.Length - 1, 1);
-            //        }
-            //        else
-            //            queryBuilder.Append(resolveResult.SqlOrderConditionText);
-
-            //        queryBuilder.Append(") as [RowId],");
-
-            //        #endregion
-
-            //        #region 指定查询的字段
-
-            //        if (resolveResult.SqlSelectFields == null || resolveResult.SqlSelectFields.Count() <= 0)
-            //        {
-            //            //如果没有设置要查询的字段，默认查询所有
-            //            foreach (var item in columns)
-            //                resolveResult.SetSelectField(new ClickHouseSelectField
-            //                {
-            //                    DBFieldAsName = item.DbColumnName,
-            //                    DBSelectFragment = item.DbColumnName,
-            //                    IsModelProperty = true
-            //                });
-            //        }
-            //        foreach (var item in resolveResult.SqlSelectFields)
-            //        {
-            //            if (item.IsModelProperty)
-            //            {
-            //                queryBuilder.Append("[");
-            //                queryBuilder.Append(item.DBSelectFragment);
-            //                queryBuilder.Append("]");
-            //                queryBuilder.Append(" as ");
-            //                queryBuilder.Append("[");
-            //                queryBuilder.Append(item.DBFieldAsName);
-            //                queryBuilder.Append("]");
-            //                queryBuilder.Append(",");
-            //            }
-            //        }
-            //        queryBuilder.Replace(",", "", queryBuilder.Length - 1, 1);
-
-            //        #endregion
-
-            //        #region 指定查询的表
-
-            //        queryBuilder.Append(" from ");
-            //        queryBuilder.Append("[");
-            //        queryBuilder.Append(tableName);
-            //        queryBuilder.Append("]");
-
-            //        #endregion
-
-            //        #region 指定Where条件
-
-            //        if (!string.IsNullOrEmpty(resolveResult.SqlWhereConditionText))
-            //        {
-            //            queryBuilder.Append(" where ");
-            //            queryBuilder.Append(resolveResult.SqlWhereConditionText);
-            //        }
-            //        if (resolveResult.SqlQuerylParameters != null && resolveResult.SqlQuerylParameters.Count() > 0)
-            //            foreach (var item in resolveResult.SqlQuerylParameters)
-            //                parameters.Add(new ClickHouseDbParameter(item.Name, item.Value));
-
-            //        #endregion
-
-            //        queryBuilder.Append(") [T1] ");
-            //        queryBuilder.Append(" where [RowId]>=");
-            //        queryBuilder.Append(((currentPage - 1) * pageSize + 1));
-            //        queryBuilder.Append(" and ");
-            //        queryBuilder.Append(" [RowId]<= ");
-            //        queryBuilder.Append((currentPage * pageSize));
-            //        queryBuilder.Append(" order by [RowId] asc");
-            //    }
-            //    queryBuilder.Append(";");
-
-            //    #endregion
-            //}
-
-            ////初始化Debug
-            //var debugBuilder = new StringBuilder();
-            //if (countBuilder.Length > 0)
-            //    debugBuilder.Append(countBuilder);
-            //if (queryBuilder.Length > 0)
-            //    debugBuilder.Append(queryBuilder);
-            //result.DebugInit(debugBuilder, ClickHouseGrammarRule.C_ParamChar, parameters.ToArray());
-
-            //#endregion
-
-            //#region 执行Sql语句
-
-            //using (DbConnection connection = new ClickHouseConnection(dbString))
-            //{
-            //    using (DbCommand command = new SqlCommand())
-            //    {
-            //        command.Connection = connection;
-            //        if (parameters.Count > 0)
-            //            foreach (var item in parameters)
-            //                command.Parameters.Add(item);
-
-            //        // 尝试打开数据库链接
-            //        try
-            //        {
-            //            await connection.OpenAsync();
-            //        }
-            //        catch (Exception ex)
-            //        {
-            //            result.AppendException(ex);
-
-            //            await command.DisposeAsync();
-            //            await connection.CloseAsync();
-            //            await connection.DisposeAsync();
-
-            //            return result;
-            //        }
-
-            //        // 判断是否需要执行统计语句
-            //        if (countBuilder.Length > 0)
-            //        {
-            //            //尝试执行语句返回第一行第一列
-            //            command.CommandText = countBuilder.ToString();
-            //            result.TotalCount = Convert.ToInt32(await command.ExecuteScalarAsync());
-
-            //            count_from_list = false;
-            //        }
-            //        else
-            //            count_from_list = true;
-
-            //        //如果存在符合条件的数据则进行二次查询，否则跳出
-            //        if (count_from_list || result.TotalCount > 0)
-            //        {
-            //            result.CurrentPage = currentPage;
-            //            result.PageSize = pageSize;
-
-            //            //尝试执行语句返回DataReader
-            //            command.CommandText = queryBuilder.ToString();
-
-            //            DbDataReader reader = null;
-            //            try
-            //            {
-            //                reader = await command.ExecuteReaderAsync();
-            //            }
-            //            catch (Exception ex)
-            //            {
-            //                result.AppendError("sql语句执行错误，" + command.CommandText);
-            //                result.AppendException(ex);
-
-            //                await command.DisposeAsync();
-            //                await connection.CloseAsync();
-            //                await connection.DisposeAsync();
-
-            //                return result;
-            //            }
-            //            if (reader != null && reader.HasRows)
-            //            {
-            //                result.Record = new List<M>();
-            //                M entity = default;
-            //                while (await reader.ReadAsync())
-            //                {
-            //                    entity = this.AutoFillModel(reader, modelT, resolveResult.SqlSelectFields);
-            //                    result.Record.Add(entity);
-            //                }
-
-            //                //释放资源，关闭连结
-            //                await reader.CloseAsync();
-            //                await reader.DisposeAsync();
-            //            }
-
-            //            // 查询符合条件的数据赋值
-            //            if (count_from_list)
-            //                result.TotalCount = null == result.Record ? 0 : result.Record.Count;
-            //        }
-            //    }
-            //}
-
-            //#endregion
-
-            //return result;
+            int currentPage = 0;
+            int pageSize = 0;
+            ClickHouseSentenceResult resolveResult = null;
+
+            #region 解析表达式条件
+
+            if (exp != null)
+            {
+                resolveResult = ClickHouseSentenceHandler.ExecuteResolver(exp, this._dbMappingHandler);
+                if (!resolveResult.IsAvailable())
+                {
+                    result.CopyStatus(resolveResult);
+                    return result;
+                }
+            }
+
+            #endregion
+
+            #region 拼接SQL语句
+
+            // 获取当前表或试图名
+            string tableName = this._dbMappingHandler.GetDbTableName(modelT);
+            if (!string.IsNullOrEmpty(suffix))
+                tableName = $"{tableName}{suffix}";
+
+            // 参数定义
+            bool count_from_list = false;
+            StringBuilder countBuilder = new StringBuilder();
+            StringBuilder queryBuilder = new StringBuilder("select ");
+
+            if (resolveResult == null)
+            {
+                #region 初始化查询分析中间对象
+
+                // 初始化保证该不为空（下面查询出数据后封装model会用）
+                resolveResult = ClickHouseSentenceResult.Create();
+
+                // 设置分页参数
+                currentPage = ClickHouseSentenceResult.DEFAULT_CURRENTPAGE;
+                pageSize = ClickHouseSentenceResult.DEFAULT_PAGESIZE;
+                resolveResult.SetPageCondition(currentPage, pageSize);
+
+                //设置检索的全字段，默认查询所有
+                foreach (var item in columns)
+                    resolveResult.SetSelectField(new ClickHouseSelectField
+                    {
+                        DBFieldAsName = item.DbColumnName,
+                        DBSelectFragment = item.DbColumnName,
+                        IsModelProperty = true
+                    });
+
+                #endregion
+
+                #region 强制设置数据结果集统计从列表中加载
+
+                // 指示数据集从list加载
+                count_from_list = true;
+
+                #endregion
+
+                #region 拼接构造查询语句
+
+                // 查询出所有的字段
+                string all_cols = string.Join(',', columns.Select(s => $"{ClickHouseGrammarRule.GenerateFieldWrapped(s.DbColumnName)}"));
+
+                // 已经是默认的分页索引和页码
+                queryBuilder.Append(all_cols);
+                queryBuilder.Append(" from ");
+                queryBuilder.Append(ClickHouseGrammarRule.GenerateTableWrapped(tableName));
+                queryBuilder.Append($" limit {pageSize}");
+
+                #endregion
+            }
+            else
+            {
+                #region 读取分页参数
+
+                // 参数读取
+                currentPage = resolveResult.SqlPagerCondition.Key;
+                pageSize = resolveResult.SqlPagerCondition.Value;
+
+                // 检查分页参数的非法与合理性
+                if (currentPage < 1)
+                    currentPage = ClickHouseSentenceResult.DEFAULT_CURRENTPAGE;
+                if (pageSize < 1)
+                    pageSize = ClickHouseSentenceResult.DEFAULT_PAGESIZE;
+
+                #endregion
+
+                #region 特殊情况处理（若currpage=1并且pageSize=int.MaxValue,那么就是查询所有的数据,所以可设置不启动分页）
+
+                bool enablePaging = true;
+                if (1 == currentPage && int.MaxValue == pageSize)
+                    enablePaging = false;
+
+                #endregion
+
+                #region 启用分页则需要根据条件查询总数量(拼接构造统计语句)
+
+                if (enablePaging)
+                {
+                    countBuilder.Append($"select count(1) from {ClickHouseGrammarRule.GenerateTableWrapped(tableName)}");
+                    if (!string.IsNullOrEmpty(resolveResult.SqlWhereConditionText))
+                    {
+                        countBuilder.Append(" where ");
+                        countBuilder.Append(resolveResult.SqlWhereConditionText);
+                    }
+                    countBuilder.Append(";");
+                }
+                else
+                    count_from_list = true; // 指示数据集从list加载
+
+                #endregion
+
+                #region 拼接构造查询语句
+
+                #region 指定需要查询的字段
+
+                if (resolveResult.SqlSelectFields == null || resolveResult.SqlSelectFields.Count() <= 0)
+                {
+                    //如果没有设置要查询的字段，默认查询所有
+                    foreach (var item in columns)
+                        resolveResult.SetSelectField(new ClickHouseSelectField
+                        {
+                            DBFieldAsName = item.DbColumnName,
+                            DBSelectFragment = item.DbColumnName,
+                            IsModelProperty = true
+                        });
+                }
+
+                string all_cols = string.Join(',', resolveResult.SqlSelectFields.Select(s => $"{ClickHouseGrammarRule.GenerateFieldWrapped(s.DBSelectFragment)}"));
+
+                queryBuilder.Append(all_cols);
+
+                #endregion
+
+                #region 指定搜索表
+
+                queryBuilder.Append(" from ");
+                queryBuilder.Append(ClickHouseGrammarRule.GenerateTableWrapped(tableName));
+
+                #endregion
+
+                #region 指定Where条件
+
+                if (!string.IsNullOrEmpty(resolveResult.SqlWhereConditionText))
+                {
+                    queryBuilder.Append(" where ");
+                    queryBuilder.Append(resolveResult.SqlWhereConditionText);
+                }
+
+                #endregion
+
+                #region 指定Order条件
+
+                if (!string.IsNullOrEmpty(resolveResult.SqlOrderConditionText))
+                {
+                    queryBuilder.Append(" order by ");
+                    queryBuilder.Append(resolveResult.SqlOrderConditionText);
+                }
+
+                #endregion
+
+                #region 分页条件
+
+                queryBuilder.Append($" limit {pageSize}");
+
+                int offset = (currentPage - 1) * pageSize;
+                if (offset > 0)
+                    queryBuilder.Append($" offset {offset}");
+
+                #endregion
+
+                #endregion
+            }
+            queryBuilder.Append(";");
+
+            //初始化Debug
+            var debugBuilder = new StringBuilder();
+            if (countBuilder.Length > 0)
+                debugBuilder.Append(countBuilder);
+            if (queryBuilder.Length > 0)
+                debugBuilder.Append(queryBuilder);
+            result.DebugInit(debugBuilder, ClickHouseGrammarRule.C_ParamChar);
+
+            #endregion
+
+            #region 执行Sql语句
+
+            using (DbConnection connection = new ClickHouseConnection(dbString))
+            {
+                using (DbCommand command = connection.CreateCommand())
+                {
+                    command.Connection = connection;
+
+                    // 尝试打开数据库链接
+                    try
+                    {
+                        await connection.OpenAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        result.AppendException(ex);
+
+                        await command.DisposeAsync();
+                        await connection.CloseAsync();
+                        await connection.DisposeAsync();
+
+                        return result;
+                    }
+
+                    // 判断是否需要执行统计语句
+                    if (countBuilder.Length > 0)
+                    {
+                        //尝试执行语句返回第一行第一列
+                        command.CommandText = countBuilder.ToString();
+                        result.TotalCount = Convert.ToInt32(await command.ExecuteScalarAsync());
+
+                        count_from_list = false;
+                    }
+                    else
+                        count_from_list = true;
+
+                    //如果存在符合条件的数据则进行二次查询，否则跳出
+                    if (count_from_list || result.TotalCount > 0)
+                    {
+                        result.CurrentPage = currentPage;
+                        result.PageSize = pageSize;
+
+                        //尝试执行语句返回DataReader
+                        command.CommandText = queryBuilder.ToString();
+
+                        DbDataReader reader = null;
+                        try
+                        {
+                            reader = await command.ExecuteReaderAsync();
+                        }
+                        catch (Exception ex)
+                        {
+                            result.AppendError("sql语句执行错误，" + command.CommandText);
+                            result.AppendException(ex);
+
+                            await command.DisposeAsync();
+                            await connection.CloseAsync();
+                            await connection.DisposeAsync();
+
+                            return result;
+                        }
+                        if (reader != null && reader.HasRows)
+                        {
+                            result.Record = new List<M>();
+                            M entity = default;
+                            while (await reader.ReadAsync())
+                            {
+                                entity = this.AutoFillModel(reader, modelT, resolveResult.SqlSelectFields);
+                                result.Record.Add(entity);
+                            }
+
+                            //释放资源，关闭连结
+                            await reader.CloseAsync();
+                            await reader.DisposeAsync();
+                        }
+
+                        // 查询符合条件的数据赋值
+                        if (count_from_list)
+                            result.TotalCount = null == result.Record ? 0 : result.Record.Count;
+                    }
+                }
+            }
+
+            #endregion
+
+            return result;
         }
 
         /// <summary>
