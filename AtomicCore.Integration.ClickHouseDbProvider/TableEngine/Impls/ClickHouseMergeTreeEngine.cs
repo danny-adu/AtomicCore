@@ -10,7 +10,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
     /// ClickHouse MergeTree Engine
     /// </summary>
     public class ClickHouseMergeTreeEngine<M> : IClickHouseTableEngine<M>
-        where M : IDbModel, IClickHouseDbModel, new()
+        where M : IDbModel, new()
     {
         /// <summary>
         /// 更新操作（局部更新）
