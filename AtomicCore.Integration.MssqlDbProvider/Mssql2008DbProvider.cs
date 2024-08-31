@@ -135,37 +135,29 @@ namespace AtomicCore.Integration.MssqlDbProvider
                 tableName = $"{tableName}{suffix}";
 
             StringBuilder sqlBuilder = new StringBuilder("insert into ");
-            sqlBuilder.Append("[");
-            sqlBuilder.Append(tableName);
-            sqlBuilder.Append("]");
+            sqlBuilder.Append(MssqlGrammarRule.GenerateTableWrapped(tableName));
             sqlBuilder.Append(" (");
-            foreach (var item in setFields.Select(d => d.DbColumnName))
-            {
-                sqlBuilder.Append("[");
-                sqlBuilder.Append(item);
-                sqlBuilder.Append("],");
-            }
-            sqlBuilder.Replace(",", ")", sqlBuilder.Length - 1, 1);
-            sqlBuilder.Append(" values ");
-            sqlBuilder.Append("(");
+            sqlBuilder.Append(string.Join(',', setFields.Select(d => $"{MssqlGrammarRule.GenerateFieldWrapped(d.DbColumnName)}")));
+            sqlBuilder.Append(") values (");
             foreach (var item in setFields)
             {
-                string parameterName = string.Format("{0}", item.DbColumnName);
                 PropertyInfo p_info = this._dbMappingHandler.GetPropertySingle(modelT, item.DbColumnName);
-                object parameterValue = p_info.GetValue(model, null);
+                object p_val = p_info.GetValue(model, null);
 
                 System.Data.SqlDbType dbType = MssqlDbHelper.GetDbtype(item.DbType);
-
-                DbParameter paremter = new SqlParameter(MssqlGrammarRule.GenerateParamName(parameterName), dbType);
-                paremter.Value = parameterValue;
+                DbParameter paremter = new SqlParameter(MssqlGrammarRule.GenerateParamName(item.DbColumnName), dbType)
+                {
+                    Value = p_val
+                };
                 parameters.Add(paremter);
 
-                sqlBuilder.Append(MssqlGrammarRule.GenerateParamName(parameterName));
+                sqlBuilder.Append(MssqlGrammarRule.GenerateParamName(item.DbColumnName));
                 sqlBuilder.Append(",");
             }
             sqlBuilder.Remove(sqlBuilder.Length - 1, 1);
             sqlBuilder.Append(");");
             sqlBuilder.Append("select SCOPE_IDENTITY();");
+
             //初始化Debug
             result.DebugInit(sqlBuilder, MssqlGrammarRule.C_ParamChar, parameters.ToArray());
 
