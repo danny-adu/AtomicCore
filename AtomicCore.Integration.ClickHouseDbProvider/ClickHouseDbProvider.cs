@@ -266,151 +266,23 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// <returns></returns>
         public DbNonRecord Update(Expression<Func<M, bool>> whereExp, Expression<Func<M, M>> updatePropertys, string suffix = null)
         {
-            DbNonRecord result = new DbNonRecord();
-
             string dbString = this._dbConnectionStringHandler.GetConnection();
             if (string.IsNullOrEmpty(dbString))
                 throw new Exception("dbString is null");
 
             Type modelT = typeof(M);
-            ClickHouseWhereScriptResult whereResult = null;
-            ClickHouseUpdateScriptResult updatePropertyResult = null;
+            var meta_table = _dbMappingHandler.GetDbTableSingle(modelT);
+            if (null == meta_table)
+                throw new Exception($"get table meta from class '{modelT.Name}' error");
+            if (string.IsNullOrEmpty(meta_table.Engine))
+                throw new Exception($"get engine meta from class '{modelT.Name}' error");
 
-            #region 解析where条件
+            var engine = AtomicCore.AtomicKernel.Dependency.Resolve<IClickHouseTableEngine<M>>(meta_table.Engine);
+            if (null == engine)
+                throw new Exception($"{meta_table.Engine} is not register");
 
-            //允许null，即不设置任何条件
-            if (whereExp != null)
-            {
-                Expression where_func_lambdaExp = null;
-                if (whereExp is LambdaExpression)
-                {
-                    //在方法参数上直接写条件
-                    where_func_lambdaExp = whereExp;
-                }
-                else if (whereExp is MemberExpression)
-                {
-                    //通过条件组合的模式
-                    object lambdaObject = ExpressionCalculater.GetValue(whereExp);
-                    where_func_lambdaExp = lambdaObject as Expression;
-                }
-                else
-                {
-                    result.AppendError("尚未实现直接解析" + whereExp.NodeType.ToString() + "的特例");
-                    return result;
-                }
-
-                //解析Where条件
-                whereResult = ClickHouseWhereScriptHandler.ExecuteResolver(where_func_lambdaExp, this._dbMappingHandler, false);
-                if (!whereResult.IsAvailable())
-                {
-                    result.CopyStatus(whereResult);
-                    return result;
-                }
-            }
-
-            #endregion
-
-            #region 解析需要被更新的字段
-
-            if (updatePropertys != null)
-            {
-                if (updatePropertys is LambdaExpression && updatePropertys.Body.NodeType == ExpressionType.MemberInit)
-                {
-                    updatePropertyResult = ClickHouseUpdateScriptHandler.ExecuteResolver(updatePropertys, this._dbMappingHandler);
-                    if (!updatePropertyResult.IsAvailable())
-                    {
-                        result.CopyStatus(updatePropertyResult);
-                        return result;
-                    }
-                }
-                else
-                {
-                    result.AppendError("updatePropertys表达式格式异常,表达式格式必须是MemberInit,例如：d => new News() { Content = d.Content + \":已变更\" }");
-                    return result;
-                }
-            }
-            else
-            {
-                result.AppendError("updatePropertys不允许为null,至少指定一个需要被修改的列");
-                return result;
-            }
-
-            #endregion
-
-            #region 开始拼装Sql语句
-
-            //获取所有的数据源列
-            DbColumnAttribute[] colums = this._dbMappingHandler.GetDbColumnCollection(modelT);
-
-            // 获取当前表或试图名
-            string tableName = this._dbMappingHandler.GetDbTableName(modelT);
-            if (!string.IsNullOrEmpty(suffix))
-                tableName = $"{tableName}{suffix}";
-
-            StringBuilder sqlBuilder = new StringBuilder();
-            sqlBuilder.Append($"update {ClickHouseGrammarRule.GenerateTableWrapped(tableName)} set ");
-            foreach (var item in updatePropertyResult.FieldMembers)
-            {
-                //自增长的自动跳过
-                if (colums.Any(d => d.PropertyNameMapping == item.PropertyItem.Name && d.IsDbGenerated))
-                    continue;
-
-                string cur_field = colums.First(d => d.PropertyNameMapping == item.PropertyItem.Name).DbColumnName;
-
-                sqlBuilder.Append($"{ClickHouseGrammarRule.GenerateFieldWrapped(cur_field)}={item.UpdateTextFragment},");
-            }
-            sqlBuilder.Replace(",", " ", sqlBuilder.Length - 1, 1);
-            if (whereResult != null)
-            {
-                sqlBuilder.Append("where ");
-                sqlBuilder.Append(whereResult.TextScript);
-                //foreach (var item in whereResult.Parameters)
-                //{
-                //    cur_parameter = new ClickHouseDbParameter(item.Name, item.Value);
-                //    parameters.Add(cur_parameter);
-                //}
-            }
-            sqlBuilder.Append(";");
-
-            //初始化Debug
-            result.DebugInit(sqlBuilder, ClickHouseGrammarRule.C_ParamChar);
-
-            #endregion
-
-            #region 执行Sql语句
-
-            using (DbConnection connection = new ClickHouseConnection(dbString))
-            {
-                using (DbCommand command = connection.CreateCommand())
-                {
-                    command.Connection = connection;
-                    command.CommandText = sqlBuilder.ToString();
-
-                    //尝试打开数据库连结
-                    if (ClickHouseDbHelper.TryOpenDbConnection(connection, ref result))
-                    {
-                        try
-                        {
-                            result.AffectedRow = command.ExecuteNonQuery();
-                        }
-                        catch (Exception ex)
-                        {
-                            result.AppendError("sql语句执行异常," + command.CommandText);
-                            result.AppendException(ex);
-
-                            command.Dispose();
-                            connection.Close();
-                            connection.Dispose();
-
-                            return result;
-                        }
-                    }
-                }
-            }
-
-            #endregion
-
-            return result;
+            return engine.UpdateAsync(whereExp, updatePropertys)
+                .ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -422,7 +294,23 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// <returns></returns>
         public DbNonRecord Update(Expression<Func<M, bool>> whereExp, M model, string suffix = null)
         {
-            throw new NotImplementedException("ClickHouse Not Supported");
+            string dbString = this._dbConnectionStringHandler.GetConnection();
+            if (string.IsNullOrEmpty(dbString))
+                throw new Exception("dbString is null");
+
+            Type modelT = typeof(M);
+            var meta_table = _dbMappingHandler.GetDbTableSingle(modelT);
+            if (null == meta_table)
+                throw new Exception($"get table meta from class '{modelT.Name}' error");
+            if (string.IsNullOrEmpty(meta_table.Engine))
+                throw new Exception($"get engine meta from class '{modelT.Name}' error");
+
+            var engine = AtomicCore.AtomicKernel.Dependency.Resolve<IClickHouseTableEngine<M>>(meta_table.Engine);
+            if (null == engine)
+                throw new Exception($"{meta_table.Engine} is not register");
+
+            return engine.UpdateAsync(whereExp, model)
+                .ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -434,7 +322,23 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// <returns></returns>
         public DbNonRecord UpdateTask(IEnumerable<DbUpdateTaskData<M>> taskList, bool enableSqlTransaction = false, string suffix = null)
         {
-            throw new NotImplementedException("ClickHouse Not Supported");
+            string dbString = this._dbConnectionStringHandler.GetConnection();
+            if (string.IsNullOrEmpty(dbString))
+                throw new Exception("dbString is null");
+
+            Type modelT = typeof(M);
+            var meta_table = _dbMappingHandler.GetDbTableSingle(modelT);
+            if (null == meta_table)
+                throw new Exception($"get table meta from class '{modelT.Name}' error");
+            if (string.IsNullOrEmpty(meta_table.Engine))
+                throw new Exception($"get engine meta from class '{modelT.Name}' error");
+
+            var engine = AtomicCore.AtomicKernel.Dependency.Resolve<IClickHouseTableEngine<M>>(meta_table.Engine);
+            if (null == engine)
+                throw new Exception($"{meta_table.Engine} is not register");
+
+            return engine.UpdateTaskAsync(taskList, enableSqlTransaction)
+                .ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -445,120 +349,23 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// <returns></returns>
         public DbNonRecord Delete(Expression<Func<M, bool>> deleteExp, string suffix = null)
         {
-            DbNonRecord result = new DbNonRecord();
-            if (null == deleteExp)
-            {
-                result.AppendError("不允许传入null条件进行删除，此行为属于非法行为！");
-                return result;
-            }
-
             string dbString = this._dbConnectionStringHandler.GetConnection();
             if (string.IsNullOrEmpty(dbString))
                 throw new Exception("dbString is null");
 
             Type modelT = typeof(M);
+            var meta_table = _dbMappingHandler.GetDbTableSingle(modelT);
+            if (null == meta_table)
+                throw new Exception($"get table meta from class '{modelT.Name}' error");
+            if (string.IsNullOrEmpty(meta_table.Engine))
+                throw new Exception($"get engine meta from class '{modelT.Name}' error");
 
-            #region 解析条件语句
+            var engine = AtomicCore.AtomicKernel.Dependency.Resolve<IClickHouseTableEngine<M>>(meta_table.Engine);
+            if (null == engine)
+                throw new Exception($"{meta_table.Engine} is not register");
 
-            Expression where_func_lambdaExp;
-            if (deleteExp is LambdaExpression)
-            {
-                //在方法参数上直接写条件
-                where_func_lambdaExp = deleteExp;
-            }
-            else if (deleteExp is MemberExpression)
-            {
-                //通过条件组合的模式
-                object lambdaObject = ExpressionCalculater.GetValue(deleteExp);
-                where_func_lambdaExp = lambdaObject as Expression;
-            }
-            else
-            {
-                result.AppendError("尚未实现直接解析" + deleteExp.NodeType.ToString() + "的特例");
-                return result;
-            }
-
-            //执行where解析
-            ClickHouseWhereScriptResult whereResult = ClickHouseWhereScriptHandler.ExecuteResolver(where_func_lambdaExp, this._dbMappingHandler, false);
-            if (!whereResult.IsAvailable())
-            {
-                result.CopyStatus(whereResult);
-                return result;
-            }
-
-            #endregion
-
-            #region 拼接Sql语句
-
-            // 获取当前表或试图名
-            string tableName = this._dbMappingHandler.GetDbTableName(modelT);
-            if (!string.IsNullOrEmpty(suffix))
-                tableName = $"{tableName}{suffix}";
-
-            // 这只适用于批量删除，不适合频繁的行级别操作
-            StringBuilder sqlBuilder = new StringBuilder($"alter table {ClickHouseGrammarRule.GenerateTableWrapped(tableName)} delete where {whereResult.TextScript};");
-
-            // 删除前查询可能会受影响函数（不准确）
-            StringBuilder countBuilder = new StringBuilder($"select count(*) from {ClickHouseGrammarRule.GenerateTableWrapped(tableName)} where {whereResult.TextScript};");
-
-            //初始化Debug
-            result.DebugInit(sqlBuilder, ClickHouseGrammarRule.C_ParamChar);
-
-            #endregion
-
-            #region 开始执行Sql语句
-
-            using (DbConnection connection = new ClickHouseConnection(dbString))
-            {
-                using (DbCommand command = connection.CreateCommand())
-                {
-                    command.Connection = connection;
-                    command.CommandText = sqlBuilder.ToString();
-
-                    //尝试打开数据库连结
-                    if (ClickHouseDbHelper.TryOpenDbConnection(connection, ref result))
-                    {
-                        // 执行待删除的数据
-                        try
-                        {
-                            command.CommandText = countBuilder.ToString();
-                            result.AffectedRow = Convert.ToInt32(command.ExecuteScalar());
-                        }
-                        catch (Exception ex)
-                        {
-                            result.AppendError("sql语句执行异常," + command.CommandText);
-                            result.AppendException(ex);
-
-                            command.Dispose();
-                            connection.Close();
-                            connection.Dispose();
-
-                            return result;
-                        }
-
-                        // 执行真实数据删除
-                        try
-                        {
-                            command.ExecuteNonQuery();
-                        }
-                        catch (Exception ex)
-                        {
-                            result.AppendError("sql语句执行异常," + command.CommandText);
-                            result.AppendException(ex);
-
-                            command.Dispose();
-                            connection.Close();
-                            connection.Dispose();
-
-                            return result;
-                        }
-                    }
-                }
-            }
-
-            #endregion
-
-            return result;
+            return engine.DeleteAsync(deleteExp)
+                .ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -1324,185 +1131,6 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         public Task<DbNonRecord> UpdateAsync(Expression<Func<M, bool>> whereExp, Expression<Func<M, M>> updatePropertys, string suffix = null)
         {
             throw new NotImplementedException("ClickHouse Not Supported");
-
-            //DbNonRecord result = new DbNonRecord();
-
-            //string dbString = this._dbConnectionStringHandler.GetConnection();
-            //if (string.IsNullOrEmpty(dbString))
-            //    throw new Exception("dbString is null");
-
-            //Type modelT = typeof(M);
-            //ClickHouseWhereScriptResult whereResult = null;
-            //ClickHouseUpdateScriptResult updatePropertyResult = null;
-
-            //#region 解析where条件
-
-            ////允许null，即不设置任何条件
-            //if (whereExp != null)
-            //{
-            //    Expression where_func_lambdaExp = null;
-            //    if (whereExp is LambdaExpression)
-            //    {
-            //        //在方法参数上直接写条件
-            //        where_func_lambdaExp = whereExp;
-            //    }
-            //    else if (whereExp is MemberExpression)
-            //    {
-            //        //通过条件组合的模式
-            //        object lambdaObject = ExpressionCalculater.GetValue(whereExp);
-            //        where_func_lambdaExp = lambdaObject as Expression;
-            //    }
-            //    else
-            //    {
-            //        result.AppendError("尚未实现直接解析" + whereExp.NodeType.ToString() + "的特例");
-            //        return result;
-            //    }
-
-            //    //解析Where条件
-            //    whereResult = ClickHouseWhereScriptHandler.ExecuteResolver(where_func_lambdaExp, this._dbMappingHandler, false);
-            //    if (!whereResult.IsAvailable())
-            //    {
-            //        result.CopyStatus(whereResult);
-            //        return result;
-            //    }
-            //}
-
-            //#endregion
-
-            //#region 解析需要被更新的字段
-
-            //if (updatePropertys != null)
-            //{
-            //    if (updatePropertys is LambdaExpression && updatePropertys.Body.NodeType == ExpressionType.MemberInit)
-            //    {
-            //        updatePropertyResult = ClickHouseUpdateScriptHandler.ExecuteResolver(updatePropertys, this._dbMappingHandler);
-            //        if (!updatePropertyResult.IsAvailable())
-            //        {
-            //            result.CopyStatus(updatePropertyResult);
-            //            return result;
-            //        }
-            //    }
-            //    else
-            //    {
-            //        result.AppendError("updatePropertys表达式格式异常,表达式格式必须是MemberInit,例如：d => new News() { Content = d.Content + \":已变更\" }");
-            //        return result;
-            //    }
-            //}
-            //else
-            //{
-            //    result.AppendError("updatePropertys不允许为null,至少指定一个需要被修改的列");
-            //    return result;
-            //}
-
-            //#endregion
-
-            //#region 开始拼装Sql语句
-
-            ////获取所有的数据源列
-            //DbColumnAttribute[] colums = this._dbMappingHandler.GetDbColumnCollection(modelT);
-
-            //// 获取表名
-            //string tableName = this._dbMappingHandler.GetDbTableName(modelT);
-            //if (!string.IsNullOrEmpty(suffix))
-            //    tableName = $"{tableName}{suffix}";
-
-            //List<DbParameter> parameters = new List<DbParameter>();
-            //DbParameter cur_parameter = null;
-            //StringBuilder sqlBuilder = new StringBuilder("update ");
-            //sqlBuilder.Append("[");
-            //sqlBuilder.Append(tableName);
-            //sqlBuilder.Append("]");
-            //sqlBuilder.Append(" set ");
-            //foreach (var item in updatePropertyResult.FieldMembers)
-            //{
-            //    //自增长的自动跳过
-            //    if (colums.Any(d => d.PropertyNameMapping == item.PropertyItem.Name && d.IsDbGenerated))
-            //    {
-            //        continue;
-            //    }
-
-            //    string cur_field = colums.First(d => d.PropertyNameMapping == item.PropertyItem.Name).DbColumnName;
-
-            //    sqlBuilder.Append(" ");
-            //    sqlBuilder.Append("[");
-            //    sqlBuilder.Append(cur_field);
-            //    sqlBuilder.Append("]");
-            //    sqlBuilder.Append("=");
-            //    sqlBuilder.Append(item.UpdateTextFragment);
-            //    sqlBuilder.Append(",");
-
-            //    foreach (var pitem in item.Parameter)
-            //    {
-            //        cur_parameter = new ClickHouseDbParameter(pitem.Name, pitem.Value);
-            //        parameters.Add(cur_parameter);
-            //    }
-            //}
-            //sqlBuilder.Replace(",", " ", sqlBuilder.Length - 1, 1);
-            //if (whereResult != null)
-            //{
-            //    sqlBuilder.Append("where ");
-            //    sqlBuilder.Append(whereResult.TextScript);
-            //    foreach (var item in whereResult.Parameters)
-            //    {
-            //        cur_parameter = new ClickHouseDbParameter(item.Name, item.Value);
-            //        parameters.Add(cur_parameter);
-            //    }
-            //}
-            //sqlBuilder.Append(";");
-
-            ////初始化Debug
-            //result.DebugInit(sqlBuilder, ClickHouseGrammarRule.C_ParamChar, parameters.ToArray());
-
-            //#endregion
-
-            //#region 执行Sql语句
-
-            //using (DbConnection connection = new ClickHouseConnection(dbString))
-            //{
-            //    using (DbCommand command = new SqlCommand())
-            //    {
-            //        command.Connection = connection;
-            //        command.CommandText = sqlBuilder.ToString();
-            //        foreach (DbParameter item in parameters)
-            //            command.Parameters.Add(item);
-
-            //        // 尝试打开数据库链接
-            //        try
-            //        {
-            //            await connection.OpenAsync();
-            //        }
-            //        catch (Exception ex)
-            //        {
-            //            result.AppendException(ex);
-
-            //            await command.DisposeAsync();
-            //            await connection.CloseAsync();
-            //            await connection.DisposeAsync();
-
-            //            return result;
-            //        }
-
-            //        try
-            //        {
-            //            result.AffectedRow = await command.ExecuteNonQueryAsync();
-            //        }
-            //        catch (Exception ex)
-            //        {
-            //            result.AppendError("sql语句执行异常," + command.CommandText);
-            //            result.AppendException(ex);
-
-            //            await command.DisposeAsync();
-            //            await connection.CloseAsync();
-            //            await connection.DisposeAsync();
-
-            //            return result;
-            //        }
-            //    }
-            //}
-
-            //#endregion
-
-            //return result;
         }
 
         /// <summary>
