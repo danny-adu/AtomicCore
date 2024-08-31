@@ -86,159 +86,157 @@ namespace AtomicCore.Integration.MssqlDbProvider
         public DbSingleRecord<M> Insert(M model, string suffix = null)
         {
             DbSingleRecord<M> result = new DbSingleRecord<M>();
-
-            string dbString = this._dbConnectionStringHandler.GetConnection();
-            if (string.IsNullOrEmpty(dbString))
-                throw new Exception("dbString is null");
-            Type modelT = typeof(M);
-
-            if (model != null)
-            {
-                #region 判断主键数量
-
-                DbColumnAttribute[] columns = this._dbMappingHandler.GetDbColumnCollection(modelT);
-                if (null == columns || columns.Length <= 0)
-                {
-                    result.AppendError(string.Format("{0}类型无字段映射", modelT.FullName));
-                    return result;
-                }
-
-                DbColumnAttribute[] setPrimaryKeys = columns.Where(d => d.IsDbGenerated).ToArray();
-                if (setPrimaryKeys.Count() > 1)
-                {
-                    result.AppendError("暂不允许使用双主键！请设置一列为自增长主键！");
-                    return result;
-                }
-
-                #endregion
-
-                //需要设置参数插入的字段
-                DbColumnAttribute[] setFields = columns.Where(d => !d.IsDbGenerated).ToArray();
-                if (setFields.Length > 0)
-                {
-                    List<DbParameter> parameters = new List<DbParameter>();
-
-                    #region 拼接Sql语句
-
-                    string tableName = this._dbMappingHandler.GetDbTableName(modelT);
-                    if (!string.IsNullOrEmpty(suffix))
-                        tableName = $"{tableName}{suffix}";
-
-                    StringBuilder sqlBuilder = new StringBuilder("insert into ");
-                    sqlBuilder.Append("[");
-                    sqlBuilder.Append(tableName);
-                    sqlBuilder.Append("]");
-                    sqlBuilder.Append(" (");
-                    foreach (var item in setFields.Select(d => d.DbColumnName))
-                    {
-                        sqlBuilder.Append("[");
-                        sqlBuilder.Append(item);
-                        sqlBuilder.Append("],");
-                    }
-                    sqlBuilder.Replace(",", ")", sqlBuilder.Length - 1, 1);
-                    sqlBuilder.Append(" values ");
-                    sqlBuilder.Append("(");
-                    foreach (var item in setFields)
-                    {
-                        string parameterName = string.Format("{0}", item.DbColumnName);
-                        PropertyInfo p_info = this._dbMappingHandler.GetPropertySingle(modelT, item.DbColumnName);
-                        object parameterValue = p_info.GetValue(model, null);
-
-                        System.Data.SqlDbType dbType = MssqlDbHelper.GetDbtype(item.DbType);
-
-                        DbParameter paremter = new SqlParameter(MssqlGrammarRule.GenerateParamName(parameterName), dbType);
-                        paremter.Value = parameterValue;
-                        parameters.Add(paremter);
-
-                        sqlBuilder.Append(MssqlGrammarRule.GenerateParamName(parameterName));
-                        sqlBuilder.Append(",");
-                    }
-                    sqlBuilder.Remove(sqlBuilder.Length - 1, 1);
-                    sqlBuilder.Append(");");
-                    sqlBuilder.Append("select SCOPE_IDENTITY();");
-                    //初始化Debug
-                    result.DebugInit(sqlBuilder, MssqlGrammarRule.C_ParamChar, parameters.ToArray());
-
-                    #endregion
-
-                    #region 执行Sql语句
-
-                    using (DbConnection connection = new SqlConnection(dbString))
-                    {
-                        using (DbCommand command = new SqlCommand())
-                        {
-                            command.Connection = connection;
-                            command.CommandText = sqlBuilder.ToString();
-                            foreach (DbParameter item in parameters)
-                                command.Parameters.Add(item);
-
-                            //尝试打开数据库连结
-                            if (MssqlDbHelper.TryOpenDbConnection(connection, ref result))
-                            {
-                                if (setPrimaryKeys != null && setPrimaryKeys.Length > 0)
-                                {
-                                    try
-                                    {
-                                        object dbVal = command.ExecuteScalar();
-                                        PropertyInfo pinfo = this._dbMappingHandler.GetPropertySingle(modelT, setPrimaryKeys.First().DbColumnName);
-                                        if (pinfo != null && dbVal != DBNull.Value)
-                                        {
-                                            dbVal = Convert.ChangeType(dbVal, pinfo.PropertyType);
-                                            pinfo.SetValue(model, dbVal, null);
-                                        }
-                                        result.Record = model;
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        result.Record = default;
-                                        result.AppendException(ex);
-
-                                        command.Dispose();
-                                        connection.Close();
-                                        connection.Dispose();
-
-                                        return result;
-                                    }
-                                }
-                                else
-                                {
-                                    try
-                                    {
-                                        int affectedRow = command.ExecuteNonQuery();
-                                        if (affectedRow > 0)
-                                            result.Record = model;
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        result.Record = default;
-                                        result.AppendException(ex);
-
-                                        command.Dispose();
-                                        connection.Close();
-                                        connection.Dispose();
-
-                                        return result;
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    #endregion
-
-                    return result;
-                }
-                else
-                {
-                    result.AppendError("插入的表仅有自增长列或没有指定任何列");
-                    return result;
-                }
-            }
-            else
+            if (null == model)
             {
                 result.AppendError("插入数据时候的Model为空");
                 return result;
             }
+
+            string dbString = this._dbConnectionStringHandler.GetConnection();
+            if (string.IsNullOrEmpty(dbString))
+                throw new Exception("dbString is null");
+
+            #region 判断主键数量
+
+            Type modelT = typeof(M);
+            DbColumnAttribute[] columns = this._dbMappingHandler.GetDbColumnCollection(modelT);
+            if (null == columns || columns.Length <= 0)
+            {
+                result.AppendError(string.Format("{0}类型无字段映射", modelT.FullName));
+                return result;
+            }
+
+            DbColumnAttribute[] setPrimaryKeys = columns.Where(d => d.IsDbGenerated).ToArray();
+            if (setPrimaryKeys.Count() > 1)
+            {
+                result.AppendError("暂不允许使用双主键！请设置一列为自增长主键！");
+                return result;
+            }
+
+            #endregion
+
+            #region 需要设置参数插入的字段
+
+            DbColumnAttribute[] setFields = columns.Where(d => !d.IsDbGenerated).ToArray();
+            if (setFields.Length <= 0)
+            {
+                result.AppendError("插入的表仅有自增长列或没有指定任何列");
+                return result;
+            }
+
+            #endregion
+
+            #region 拼接Sql语句
+
+            List<DbParameter> parameters = new List<DbParameter>();
+
+            string tableName = this._dbMappingHandler.GetDbTableName(modelT);
+            if (!string.IsNullOrEmpty(suffix))
+                tableName = $"{tableName}{suffix}";
+
+            StringBuilder sqlBuilder = new StringBuilder("insert into ");
+            sqlBuilder.Append("[");
+            sqlBuilder.Append(tableName);
+            sqlBuilder.Append("]");
+            sqlBuilder.Append(" (");
+            foreach (var item in setFields.Select(d => d.DbColumnName))
+            {
+                sqlBuilder.Append("[");
+                sqlBuilder.Append(item);
+                sqlBuilder.Append("],");
+            }
+            sqlBuilder.Replace(",", ")", sqlBuilder.Length - 1, 1);
+            sqlBuilder.Append(" values ");
+            sqlBuilder.Append("(");
+            foreach (var item in setFields)
+            {
+                string parameterName = string.Format("{0}", item.DbColumnName);
+                PropertyInfo p_info = this._dbMappingHandler.GetPropertySingle(modelT, item.DbColumnName);
+                object parameterValue = p_info.GetValue(model, null);
+
+                System.Data.SqlDbType dbType = MssqlDbHelper.GetDbtype(item.DbType);
+
+                DbParameter paremter = new SqlParameter(MssqlGrammarRule.GenerateParamName(parameterName), dbType);
+                paremter.Value = parameterValue;
+                parameters.Add(paremter);
+
+                sqlBuilder.Append(MssqlGrammarRule.GenerateParamName(parameterName));
+                sqlBuilder.Append(",");
+            }
+            sqlBuilder.Remove(sqlBuilder.Length - 1, 1);
+            sqlBuilder.Append(");");
+            sqlBuilder.Append("select SCOPE_IDENTITY();");
+            //初始化Debug
+            result.DebugInit(sqlBuilder, MssqlGrammarRule.C_ParamChar, parameters.ToArray());
+
+            #endregion
+
+            #region 执行Sql语句
+
+            using (DbConnection connection = new SqlConnection(dbString))
+            {
+                using (DbCommand command = new SqlCommand())
+                {
+                    command.Connection = connection;
+                    command.CommandText = sqlBuilder.ToString();
+                    foreach (DbParameter item in parameters)
+                        command.Parameters.Add(item);
+
+                    //尝试打开数据库连结
+                    if (MssqlDbHelper.TryOpenDbConnection(connection, ref result))
+                    {
+                        if (setPrimaryKeys != null && setPrimaryKeys.Length > 0)
+                        {
+                            try
+                            {
+                                object dbVal = command.ExecuteScalar();
+                                PropertyInfo pinfo = this._dbMappingHandler.GetPropertySingle(modelT, setPrimaryKeys.First().DbColumnName);
+                                if (pinfo != null && dbVal != DBNull.Value)
+                                {
+                                    dbVal = Convert.ChangeType(dbVal, pinfo.PropertyType);
+                                    pinfo.SetValue(model, dbVal, null);
+                                }
+                                result.Record = model;
+                            }
+                            catch (Exception ex)
+                            {
+                                result.Record = default;
+                                result.AppendException(ex);
+
+                                command.Dispose();
+                                connection.Close();
+                                connection.Dispose();
+
+                                return result;
+                            }
+                        }
+                        else
+                        {
+                            try
+                            {
+                                int affectedRow = command.ExecuteNonQuery();
+                                if (affectedRow > 0)
+                                    result.Record = model;
+                            }
+                            catch (Exception ex)
+                            {
+                                result.Record = default;
+                                result.AppendException(ex);
+
+                                command.Dispose();
+                                connection.Close();
+                                connection.Dispose();
+
+                                return result;
+                            }
+                        }
+                    }
+                }
+            }
+
+            #endregion
+
+            return result;
         }
 
         /// <summary>
