@@ -13,7 +13,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// <param name="builder"></param>
         public static void Register(ContainerBuilder builder)
         {
-            //builder.RegisterGeneric(typeof(ClickHouseMergeTreeEngine<>)).Named(ClickHouseTableEngineDef.MergeTree, typeof(IClickHouseTableEngine<>)).InstancePerDependency();
+            builder.RegisterGeneric(typeof(ClickHouseMergeTreeEngine<>)).Named(ClickHouseTableEngineDef.MergeTree, typeof(IClickHouseTableEngine<>)).InstancePerDependency();
         }
     }
 }
