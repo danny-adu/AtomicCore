@@ -9,6 +9,8 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
     /// </summary>
     internal static class ClickHouseGrammarRule
     {
+        #region Variables
+
         /// <summary>
         /// SqlServer参数前缀
         /// </summary>
@@ -23,6 +25,10 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// 字段包裹格式(Sql语法中使用[]号将字段名进行包裹，防止关键字命名冲突)
         /// </summary>
         public const string C_FieldWrappedFormat = "`{0}`";
+
+        #endregion
+
+        #region Public Methods
 
         /// <summary>
         /// 返回Guid完全不重复的ID标识
@@ -224,5 +230,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         {
             return $"ifnull({expression},{defval ?? "0"})";
         }
+
+        #endregion
     }
 }

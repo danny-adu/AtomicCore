@@ -7,7 +7,7 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
     /// 用户基础信息表
     /// </summary>
 	[DbDatabase(Name = "default")]
-    [DbTable(Name = "Member_UserBasics")]
+    [DbTable(Name = "Member_UserBasics", Engine = "MergeTree")]
     public class Member_UserBasics : IDbModel
     {
         /// <summary>
