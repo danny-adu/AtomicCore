@@ -8,7 +8,7 @@ namespace AtomicCore.Integration.ClickHouseDbProviderUnitTest
     /// </summary>
 	[DbDatabase(Name = "default")]
     [DbTable(Name = "Member_UserBasics")]
-    public class Member_UserBasics : IDbModel, IClickHouseDbModel
+    public class Member_UserBasics : IDbModel
     {
         /// <summary>
         /// 

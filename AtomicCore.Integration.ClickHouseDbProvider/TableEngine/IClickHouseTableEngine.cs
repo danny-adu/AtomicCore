@@ -10,7 +10,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
     /// </summary>
     /// <typeparam name="M"></typeparam>
     public interface IClickHouseTableEngine<M>
-        where M : IDbModel, IClickHouseDbModel, new()
+        where M : IDbModel, new()
     {
         /// <summary>
         /// 更新操作（局部更新）

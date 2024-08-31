@@ -17,5 +17,10 @@ namespace AtomicCore.DbProvider
         /// 获取或设置表或视图的名称
         /// </summary>
         public string Name { get; set; }
+
+        /// <summary>
+        /// 表引擎 # ClickHouse
+        /// </summary>
+        public string Engine { get; set; }
     }
 }

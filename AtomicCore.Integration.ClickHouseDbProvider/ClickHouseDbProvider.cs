@@ -18,7 +18,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
     /// </summary>
     /// <typeparam name="M"></typeparam>
     public class ClickHouseDbProvider<M> : IDbProvider<M>, IDbConnectionString, IDbConnectionString<M>
-        where M : IDbModel, IClickHouseDbModel, new()
+        where M : IDbModel, new()
     {
         #region Constructors
 
