@@ -34,6 +34,26 @@ namespace AtomicCore.DbProvider
         }
 
         /// <summary>
+        /// 获取数据库的元数据
+        /// </summary>
+        /// <param name="modelType"></param>
+        /// <returns></returns>
+        DbDatabaseAttribute IDbMappingHandler.GetDatabaseSingle(Type modelType)
+        {
+            return DbMappingCache.GetDBDatabase(modelType);
+        }
+
+        /// <summary>
+        /// 获取表的元数据
+        /// </summary>
+        /// <param name="modelType"></param>
+        /// <returns></returns>
+        DbTableAttribute IDbMappingHandler.GetDbTableSingle(Type modelType)
+        {
+            return DbMappingCache.GetTable(modelType);
+        }
+
+        /// <summary>
         /// 获取列名信息
         /// </summary>
         /// <param name="modelType"></param>

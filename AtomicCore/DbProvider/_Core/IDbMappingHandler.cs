@@ -24,6 +24,20 @@ namespace AtomicCore.DbProvider
         string GetDbTableName(Type modelType);
 
         /// <summary>
+        /// 获取数据库的元数据
+        /// </summary>
+        /// <param name="modelType"></param>
+        /// <returns></returns>
+        DbDatabaseAttribute GetDatabaseSingle(Type modelType);
+
+        /// <summary>
+        /// 获取表的元数据
+        /// </summary>
+        /// <param name="modelType"></param>
+        /// <returns></returns>
+        DbTableAttribute GetDbTableSingle(Type modelType);
+
+        /// <summary>
         /// 返回符合条件的数据列属性对象【DBModel=>Database】
         /// </summary>
         /// <param name="modelType">IDBModel模型类型</param>
