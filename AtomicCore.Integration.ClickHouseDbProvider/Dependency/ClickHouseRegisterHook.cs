@@ -29,6 +29,9 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         public void Register(ContainerBuilder builder, List<Type> findTypes)
         {
             builder.RegisterGeneric(typeof(ClickHouseDbProvider<>)).Named(DatabaseType.ClickHouse, typeof(IDbProvider<>)).InstancePerDependency();
+
+            // 挂载表引擎接口
+            ClickHouseTableEngineRegisterHook.Register(builder);
         }
     }
 }
