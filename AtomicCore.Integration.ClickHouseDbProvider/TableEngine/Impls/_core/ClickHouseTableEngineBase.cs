@@ -1,7 +1,5 @@
 ﻿using AtomicCore.DbProvider;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace AtomicCore.Integration.ClickHouseDbProvider
 {
@@ -34,20 +32,13 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         public ClickHouseTableEngineBase(IDbConnectionString dbConnString, IDbMappingHandler dbMappingHandler)
         {
             if (null == dbConnString)
-                throw new ArgumentNullException("dbConnString");
+                throw new ArgumentNullException(nameof(dbConnString));
             if (null == dbMappingHandler)
-                throw new ArgumentNullException("dbMappingHandler");
+                throw new ArgumentNullException(nameof(dbMappingHandler));
 
             this._dbConnectionStringHandler = dbConnString;
             this._dbMappingHandler = dbMappingHandler;
         }
-
-        #endregion
-
-        #region Protected Methods
-
-        
-
 
         #endregion
     }

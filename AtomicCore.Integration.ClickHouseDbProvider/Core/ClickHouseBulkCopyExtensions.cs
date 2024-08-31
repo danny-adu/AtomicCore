@@ -7,7 +7,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
     /// <summary>
     /// click houser bulk copy extensions
     /// </summary>
-    public static class ClickHouseBulkCopyExtensions
+    internal static class ClickHouseBulkCopyExtensions
     {
         /// <summary>
         /// 初始化赋值 # 反射赋值
@@ -16,7 +16,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// <param name="destinationTableName"></param>
         /// <param name="columnNames"></param>
         /// <returns></returns>
-        public static ClickHouseBulkCopy ReflectionSet(this ClickHouseBulkCopy bulkCopy, string destinationTableName, IReadOnlyCollection<string> columnNames)
+        internal static ClickHouseBulkCopy ReflectionSet(this ClickHouseBulkCopy bulkCopy, string destinationTableName, IReadOnlyCollection<string> columnNames)
         {
             if (null == bulkCopy)
                 throw new ArgumentNullException(nameof(bulkCopy));
