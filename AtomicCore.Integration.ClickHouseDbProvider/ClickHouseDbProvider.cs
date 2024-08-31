@@ -277,7 +277,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
             if (string.IsNullOrEmpty(meta_table.Engine))
                 throw new Exception($"get engine meta from class '{modelT.Name}' error");
 
-            var engine = AtomicCore.AtomicKernel.Dependency.Resolve<IClickHouseTableEngine<M>>(meta_table.Engine);
+            var engine = ClickHouseDbHelper.GetEngineInstance<M>(meta_table.Engine, this, _dbMappingHandler);
             if (null == engine)
                 throw new Exception($"{meta_table.Engine} is not register");
 
@@ -305,7 +305,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
             if (string.IsNullOrEmpty(meta_table.Engine))
                 throw new Exception($"get engine meta from class '{modelT.Name}' error");
 
-            var engine = AtomicCore.AtomicKernel.Dependency.Resolve<IClickHouseTableEngine<M>>(meta_table.Engine);
+            var engine = ClickHouseDbHelper.GetEngineInstance<M>(meta_table.Engine, this, _dbMappingHandler);
             if (null == engine)
                 throw new Exception($"{meta_table.Engine} is not register");
 
@@ -333,7 +333,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
             if (string.IsNullOrEmpty(meta_table.Engine))
                 throw new Exception($"get engine meta from class '{modelT.Name}' error");
 
-            var engine = AtomicCore.AtomicKernel.Dependency.Resolve<IClickHouseTableEngine<M>>(meta_table.Engine);
+            var engine = ClickHouseDbHelper.GetEngineInstance<M>(meta_table.Engine, this, _dbMappingHandler);
             if (null == engine)
                 throw new Exception($"{meta_table.Engine} is not register");
 
@@ -360,7 +360,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
             if (string.IsNullOrEmpty(meta_table.Engine))
                 throw new Exception($"get engine meta from class '{modelT.Name}' error");
 
-            var engine = AtomicCore.AtomicKernel.Dependency.Resolve<IClickHouseTableEngine<M>>(meta_table.Engine);
+            var engine = ClickHouseDbHelper.GetEngineInstance<M>(meta_table.Engine, this, _dbMappingHandler);
             if (null == engine)
                 throw new Exception($"{meta_table.Engine} is not register");
 

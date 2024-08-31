@@ -219,5 +219,29 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         }
 
         #endregion
+
+        #region Table Engine Methods
+
+        /// <summary>
+        /// get engine instance
+        /// </summary>
+        /// <typeparam name="M"></typeparam>
+        /// <param name="regName"></param>
+        /// <param name="dbConnString"></param>
+        /// <param name="dbMappingHandler"></param>
+        /// <returns></returns>
+        internal static IClickHouseTableEngine<M> GetEngineInstance<M>(string regName, IDbConnectionString dbConnString, IDbMappingHandler dbMappingHandler)
+            where M : IDbModel, new()
+        {
+            var plist = new Dictionary<string, object>()
+            {
+                { "dbConnString", dbConnString },
+                { "dbMappingHandler", dbMappingHandler }
+            };
+
+            return AtomicCore.AtomicKernel.Dependency.Resolve<IClickHouseTableEngine<M>>(regName, plist.ToArray());
+        }
+
+        #endregion
     }
 }

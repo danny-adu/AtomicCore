@@ -31,7 +31,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
 
         #endregion
 
-        #region IDBRepository<M>
+        #region Public Methods
 
         /// <summary>
         /// 更新操作（局部更新）
@@ -39,7 +39,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// <param name="whereExp">需要被更新的条件</param>
         /// <param name="updatePropertys">需要被替换或更新的属性</param>
         /// <returns></returns>
-        public DbNonRecord Update(Expression<Func<M, bool>> whereExp, Expression<Func<M, M>> updatePropertys)
+        public async Task<DbNonRecord> UpdateAsync(Expression<Func<M, bool>> whereExp, Expression<Func<M, M>> updatePropertys)
         {
             DbNonRecord result = new DbNonRecord();
 
@@ -154,24 +154,37 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
                     command.Connection = connection;
                     command.CommandText = sqlBuilder.ToString();
 
-                    //尝试打开数据库连结
-                    if (ClickHouseDbHelper.TryOpenDbConnection(connection, ref result))
+                    // 尝试打开数据库链接
+                    try
                     {
-                        try
-                        {
-                            result.AffectedRow = command.ExecuteNonQuery();
-                        }
-                        catch (Exception ex)
-                        {
-                            result.AppendError("sql语句执行异常," + command.CommandText);
-                            result.AppendException(ex);
+                        await connection.OpenAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        result.AppendException(ex);
 
-                            command.Dispose();
-                            connection.Close();
-                            connection.Dispose();
+                        await command.DisposeAsync();
+                        await connection.CloseAsync();
+                        await connection.DisposeAsync();
 
-                            return result;
-                        }
+                        return result;
+                    }
+
+                    // 执行查询语句
+                    try
+                    {
+                        result.AffectedRow = await command.ExecuteNonQueryAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        result.AppendError("sql语句执行异常," + command.CommandText);
+                        result.AppendException(ex);
+
+                        await command.DisposeAsync();
+                        await connection.CloseAsync();
+                        await connection.DisposeAsync();
+
+                        return result;
                     }
                 }
             }
@@ -187,7 +200,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// <param name="whereExp">需要被更新的条件</param>
         /// <param name="model">需要被整体替换的实体</param>
         /// <returns></returns>
-        public DbNonRecord Update(Expression<Func<M, bool>> whereExp, M model)
+        public Task<DbNonRecord> UpdateAsync(Expression<Func<M, bool>> whereExp, M model)
         {
             throw new NotImplementedException("ClickHouse Not Supported");
         }
@@ -198,7 +211,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// <param name="taskList">任务数据</param>
         /// <param name="enableSqlTransaction">是否启动SQL事务（对于单例调用最好启用，对于外层套用事务的不需要启动）</param>
         /// <returns></returns>
-        public DbNonRecord UpdateTask(IEnumerable<DbUpdateTaskData<M>> taskList, bool enableSqlTransaction = false)
+        public Task<DbNonRecord> UpdateTaskAsync(IEnumerable<DbUpdateTaskData<M>> taskList, bool enableSqlTransaction = false)
         {
             throw new NotImplementedException("ClickHouse Not Supported");
         }
@@ -208,7 +221,7 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
         /// </summary>
         /// <param name="deleteExp">删除条件</param>
         /// <returns></returns>
-        public DbNonRecord Delete(Expression<Func<M, bool>> deleteExp)
+        public async Task<DbNonRecord> DeleteAsync(Expression<Func<M, bool>> deleteExp)
         {
             DbNonRecord result = new DbNonRecord();
             if (null == deleteExp)
@@ -278,43 +291,37 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
                     command.Connection = connection;
                     command.CommandText = sqlBuilder.ToString();
 
-                    //尝试打开数据库连结
-                    if (ClickHouseDbHelper.TryOpenDbConnection(connection, ref result))
+                    // 尝试打开数据库链接
+                    try
                     {
-                        // 执行待删除的数据
-                        try
-                        {
-                            command.CommandText = countBuilder.ToString();
-                            result.AffectedRow = Convert.ToInt32(command.ExecuteScalar());
-                        }
-                        catch (Exception ex)
-                        {
-                            result.AppendError("sql语句执行异常," + command.CommandText);
-                            result.AppendException(ex);
+                        await connection.OpenAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        result.AppendException(ex);
 
-                            command.Dispose();
-                            connection.Close();
-                            connection.Dispose();
+                        await command.DisposeAsync();
+                        await connection.CloseAsync();
+                        await connection.DisposeAsync();
 
-                            return result;
-                        }
+                        return result;
+                    }
 
-                        // 执行真实数据删除
-                        try
-                        {
-                            command.ExecuteNonQuery();
-                        }
-                        catch (Exception ex)
-                        {
-                            result.AppendError("sql语句执行异常," + command.CommandText);
-                            result.AppendException(ex);
+                    // 执行数据查询
+                    try
+                    {
+                        result.AffectedRow = await command.ExecuteNonQueryAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        result.AppendError("sql语句执行异常," + command.CommandText);
+                        result.AppendException(ex);
 
-                            command.Dispose();
-                            connection.Close();
-                            connection.Dispose();
+                        await command.DisposeAsync();
+                        await connection.CloseAsync();
+                        await connection.DisposeAsync();
 
-                            return result;
-                        }
+                        return result;
                     }
                 }
             }
@@ -322,53 +329,6 @@ namespace AtomicCore.Integration.ClickHouseDbProvider
             #endregion
 
             return result;
-        }
-
-        #endregion
-
-        #region IDbAsyncProvider<M>
-
-        /// <summary>
-        /// 更新操作（局部更新）
-        /// </summary>
-        /// <param name="whereExp">需要被更新的条件</param>
-        /// <param name="updatePropertys">需要被替换或更新的属性</param>
-        /// <returns></returns>
-        public Task<DbNonRecord> UpdateAsync(Expression<Func<M, bool>> whereExp, Expression<Func<M, M>> updatePropertys)
-        {
-            throw new NotImplementedException("ClickHouse Not Supported");
-        }
-
-        /// <summary>
-        /// 更新操作（整体更新）
-        /// </summary>
-        /// <param name="whereExp">需要被更新的条件</param>
-        /// <param name="model">需要被整体替换的实体</param>
-        /// <returns></returns>
-        public Task<DbNonRecord> UpdateAsync(Expression<Func<M, bool>> whereExp, M model)
-        {
-            throw new NotImplementedException("ClickHouse Not Supported");
-        }
-
-        /// <summary>
-        /// 批量更新任务（在一个conn.open里执行多个更新,避免多次开关造成性能损失）
-        /// </summary>
-        /// <param name="taskList">任务数据</param>
-        /// <param name="enableSqlTransaction">是否启动SQL事务（对于单例调用最好启用，对于外层套用事务的不需要启动）</param>
-        /// <returns></returns>
-        public Task<DbNonRecord> UpdateTaskAsync(IEnumerable<DbUpdateTaskData<M>> taskList, bool enableSqlTransaction = false)
-        {
-            throw new NotImplementedException("ClickHouse Not Supported");
-        }
-
-        /// <summary>
-        /// 删除操作
-        /// </summary>
-        /// <param name="deleteExp">删除条件</param>
-        /// <returns></returns>
-        public Task<DbNonRecord> DeleteAsync(Expression<Func<M, bool>> deleteExp)
-        {
-            throw new NotImplementedException("ClickHouse Not Supported");
         }
 
         #endregion
