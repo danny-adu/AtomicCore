@@ -635,13 +635,9 @@ namespace AtomicCore.Integration.MssqlDbProvider
             if (string.IsNullOrEmpty(dbString))
                 throw new Exception("dbString is null");
 
-            #region 定义全局参数
+            #region 开始循环解析任务
 
             Type modelT = typeof(M);
-
-            #endregion
-
-            #region 开始循环解析任务
 
             List<DbUpdateTaskSqlData> sqlDataList = new List<DbUpdateTaskSqlData>();
 
@@ -714,28 +710,24 @@ namespace AtomicCore.Integration.MssqlDbProvider
                 if (!string.IsNullOrEmpty(suffix))
                     tableName = $"{tableName}{suffix}";
 
+                // 参数定义
                 List<DbParameter> parameters = new List<DbParameter>();
                 DbParameter cur_parameter = null;
+
+                // 开始拼接
                 StringBuilder sqlBuilder = new StringBuilder("update ");
-                sqlBuilder.Append("[");
-                sqlBuilder.Append(tableName);
-                sqlBuilder.Append("]");
+                sqlBuilder.Append(MssqlGrammarRule.GenerateTableWrapped(tableName));
                 sqlBuilder.Append(" set ");
                 foreach (var item in updatePropertyResult.FieldMembers)
                 {
-                    //自增长的自动跳过
+                    // 自增长的自动跳过
                     if (colums.Any(d => d.PropertyNameMapping == item.PropertyItem.Name && d.IsDbGenerated))
                         continue;
 
+                    // 获取当前字段
                     string cur_field = colums.First(d => d.PropertyNameMapping == item.PropertyItem.Name).DbColumnName;
 
-                    sqlBuilder.Append(" ");
-                    sqlBuilder.Append("[");
-                    sqlBuilder.Append(cur_field);
-                    sqlBuilder.Append("]");
-                    sqlBuilder.Append("=");
-                    sqlBuilder.Append(item.UpdateTextFragment);
-                    sqlBuilder.Append(",");
+                    sqlBuilder.Append($"{MssqlGrammarRule.GenerateFieldWrapped(cur_field)}={item.UpdateTextFragment},");
 
                     foreach (var pitem in item.Parameter)
                     {
