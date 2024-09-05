@@ -825,114 +825,108 @@ namespace AtomicCore.Integration.MssqlDbProvider
         public DbNonRecord Delete(Expression<Func<M, bool>> deleteExp, string suffix = null)
         {
             DbNonRecord result = new DbNonRecord();
+            if (null == deleteExp)
+            {
+                result.AppendError("不允许传入null条件进行删除，此行为属于非法行为！");
+                return result;
+            }
 
             string dbString = this._dbConnectionStringHandler.GetConnection();
             if (string.IsNullOrEmpty(dbString))
                 throw new Exception("dbString is null");
 
-            Type modelT = typeof(M);
-            if (deleteExp != null)
+            #region 解析条件语句
+
+            Expression where_func_lambdaExp;
+            if (deleteExp is LambdaExpression)
             {
-                Expression where_func_lambdaExp;
-
-                #region 解析条件语句
-
-                if (deleteExp is LambdaExpression)
-                {
-                    //在方法参数上直接写条件
-                    where_func_lambdaExp = deleteExp;
-                }
-                else if (deleteExp is MemberExpression)
-                {
-                    //通过条件组合的模式
-                    object lambdaObject = ExpressionCalculater.GetValue(deleteExp);
-                    where_func_lambdaExp = lambdaObject as Expression;
-                }
-                else
-                {
-                    result.AppendError("尚未实现直接解析" + deleteExp.NodeType.ToString() + "的特例");
-                    return result;
-                }
-
-                //执行where解析
-                Mssql2008WhereScriptResult whereResult = Mssql2008WhereScriptHandler.ExecuteResolver(where_func_lambdaExp, this._dbMappingHandler, false);
-                if (!whereResult.IsAvailable())
-                {
-                    result.CopyStatus(whereResult);
-                    return result;
-                }
-
-                #endregion
-
-                #region 拼接Sql语句
-
-                // 获取当前表或试图名
-                string tableName = this._dbMappingHandler.GetDbTableName(modelT);
-                if (!string.IsNullOrEmpty(suffix))
-                    tableName = $"{tableName}{suffix}";
-
-                List<DbParameter> parameters = new List<DbParameter>();
-                StringBuilder sqlBuilder = new StringBuilder("delete from ");
-                sqlBuilder.Append("[");
-                sqlBuilder.Append(tableName);
-                sqlBuilder.Append("]");
-                sqlBuilder.Append(" where ");
-                sqlBuilder.Append(whereResult.TextScript);
-                foreach (var item in whereResult.Parameters)
-                {
-                    DbParameter cur_parameter = new SqlParameter(item.Name, item.Value);
-                    parameters.Add(cur_parameter);
-                }
-                sqlBuilder.Append(";");
-
-                //初始化Debug
-                result.DebugInit(sqlBuilder, MssqlGrammarRule.C_ParamChar, parameters.ToArray());
-
-                #endregion
-
-                #region 开始执行Sql语句
-
-                using (DbConnection connection = new SqlConnection(dbString))
-                {
-                    using (DbCommand command = new SqlCommand())
-                    {
-                        command.Connection = connection;
-                        command.CommandText = sqlBuilder.ToString();
-                        foreach (DbParameter item in parameters)
-                        {
-                            command.Parameters.Add(item);
-                        }
-                        //尝试打开数据库连结
-                        if (MssqlDbHelper.TryOpenDbConnection(connection, ref result))
-                        {
-                            try
-                            {
-                                result.AffectedRow = command.ExecuteNonQuery();
-                            }
-                            catch (Exception ex)
-                            {
-                                result.AppendError("sql语句执行异常," + command.CommandText);
-                                result.AppendException(ex);
-
-                                command.Dispose();
-                                connection.Close();
-                                connection.Dispose();
-
-                                return result;
-                            }
-                        }
-                    }
-                }
-
-                #endregion
-
-                return result;
+                //在方法参数上直接写条件
+                where_func_lambdaExp = deleteExp;
+            }
+            else if (deleteExp is MemberExpression)
+            {
+                //通过条件组合的模式
+                object lambdaObject = ExpressionCalculater.GetValue(deleteExp);
+                where_func_lambdaExp = lambdaObject as Expression;
             }
             else
             {
-                result.AppendError("不允许传入null条件进行删除，此行为属于非法行为！");
+                result.AppendError("尚未实现直接解析" + deleteExp.NodeType.ToString() + "的特例");
                 return result;
             }
+
+            //执行where解析
+            Mssql2008WhereScriptResult whereResult = Mssql2008WhereScriptHandler.ExecuteResolver(where_func_lambdaExp, this._dbMappingHandler, false);
+            if (!whereResult.IsAvailable())
+            {
+                result.CopyStatus(whereResult);
+                return result;
+            }
+
+            #endregion
+
+            #region 拼接Sql语句
+
+            Type modelT = typeof(M);
+
+            // 获取当前表或试图名
+            string tableName = this._dbMappingHandler.GetDbTableName(modelT);
+            if (!string.IsNullOrEmpty(suffix))
+                tableName = $"{tableName}{suffix}";
+
+            List<DbParameter> parameters = new List<DbParameter>();
+            StringBuilder sqlBuilder = new StringBuilder("delete from ");
+            sqlBuilder.Append(MssqlGrammarRule.GenerateTableWrapped(tableName));
+            sqlBuilder.Append(" where ");
+            sqlBuilder.Append(whereResult.TextScript);
+            foreach (var item in whereResult.Parameters)
+            {
+                DbParameter cur_parameter = new SqlParameter(item.Name, item.Value);
+                parameters.Add(cur_parameter);
+            }
+            sqlBuilder.Append(";");
+
+            // 初始化Debug
+            result.DebugInit(sqlBuilder, MssqlGrammarRule.C_ParamChar, parameters.ToArray());
+
+            #endregion
+
+            #region 开始执行Sql语句
+
+            using (DbConnection connection = new SqlConnection(dbString))
+            {
+                using (DbCommand command = new SqlCommand())
+                {
+                    command.Connection = connection;
+                    command.CommandText = sqlBuilder.ToString();
+                    foreach (DbParameter item in parameters)
+                        command.Parameters.Add(item);
+
+                    //尝试打开数据库连结
+                    if (MssqlDbHelper.TryOpenDbConnection(connection, ref result))
+                    {
+                        try
+                        {
+                            result.AffectedRow = command.ExecuteNonQuery();
+                        }
+                        catch (Exception ex)
+                        {
+                            result.AppendError("sql语句执行异常," + command.CommandText);
+                            result.AppendException(ex);
+
+                            command.Dispose();
+                            connection.Close();
+                            connection.Dispose();
+
+                            return result;
+                        }
+                    }
+                }
+            }
+
+            #endregion
+
+            return result;
         }
 
         /// <summary>
