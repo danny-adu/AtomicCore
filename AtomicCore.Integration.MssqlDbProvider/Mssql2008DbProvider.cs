@@ -943,12 +943,9 @@ namespace AtomicCore.Integration.MssqlDbProvider
             if (string.IsNullOrEmpty(dbString))
                 throw new Exception("dbString is null");
 
-            Type modelT = typeof(M);
-            Mssql2008SentenceResult resolveResult = null;
-            List<DbParameter> parameters = new List<DbParameter>();
-
             #region 解析表达式条件
 
+            Mssql2008SentenceResult resolveResult = null;
             if (exp != null)
             {
                 resolveResult = Mssql2008SentenceHandler.ExecuteResolver(exp, this._dbMappingHandler);
@@ -963,18 +960,26 @@ namespace AtomicCore.Integration.MssqlDbProvider
 
             #region 拼接SQL语句
 
+            Type modelT = typeof(M);
+
+            // 获取当前表的所有字段
+            DbColumnAttribute[] fields = this._dbMappingHandler.GetDbColumnCollection(modelT);
+
             // 获取当前表或试图名
             string tableName = this._dbMappingHandler.GetDbTableName(modelT);
             if (!string.IsNullOrEmpty(suffix))
                 tableName = $"{tableName}{suffix}";
 
+            // 参数列表定义
+            List<DbParameter> parameters = new List<DbParameter>();
+
             StringBuilder sqlBuilder = new StringBuilder("select top 1 ");
             if (resolveResult == null)
             {
-                sqlBuilder.Append(" * from ");
-                sqlBuilder.Append("[");
-                sqlBuilder.Append(tableName);
-                sqlBuilder.Append("]");
+                // 查询所有字段, 依次列出
+                sqlBuilder.Append(string.Join(',', fields.Select(s => MssqlGrammarRule.GenerateFieldWrapped(s.DbColumnName))));
+                sqlBuilder.Append(" from ");
+                sqlBuilder.Append(MssqlGrammarRule.GenerateTableWrapped(tableName));
             }
             else
             {
@@ -982,9 +987,6 @@ namespace AtomicCore.Integration.MssqlDbProvider
 
                 if (resolveResult.SqlSelectFields == null || resolveResult.SqlSelectFields.Count() <= 0)
                 {
-                    //如果没有设置要查询的字段，默认查询所有
-                    DbColumnAttribute[] fields = this._dbMappingHandler.GetDbColumnCollection(modelT);
-
                     foreach (var item in fields)
                         resolveResult.SetSelectField(new MssqlSelectField
                         {
@@ -994,23 +996,16 @@ namespace AtomicCore.Integration.MssqlDbProvider
                         });
                 }
                 foreach (var item in resolveResult.SqlSelectFields)
+                {
                     if (item.IsModelProperty)
-                    {
-                        sqlBuilder.Append("[");
-                        sqlBuilder.Append(item.DBSelectFragment);
-                        sqlBuilder.Append("]");
-                        sqlBuilder.Append(" as ");
-                        sqlBuilder.Append("[");
-                        sqlBuilder.Append(item.DBFieldAsName);
-                        sqlBuilder.Append("]");
-                        sqlBuilder.Append(",");
-                    }
+                        sqlBuilder.Append($"{MssqlGrammarRule.GenerateFieldWrapped(item.DBSelectFragment)},");
+                    else
+                        sqlBuilder.Append($"{MssqlGrammarRule.GenerateFieldWrapped(item.DBSelectFragment)} as {MssqlGrammarRule.GenerateFieldWrapped(item.DBFieldAsName)},");
+                }
 
                 sqlBuilder.Replace(",", "", sqlBuilder.Length - 1, 1);
                 sqlBuilder.Append(" from ");
-                sqlBuilder.Append("[");
-                sqlBuilder.Append(tableName);
-                sqlBuilder.Append("] ");
+                sqlBuilder.Append(MssqlGrammarRule.GenerateTableWrapped(tableName));
 
                 #endregion
 
@@ -1066,6 +1061,7 @@ namespace AtomicCore.Integration.MssqlDbProvider
                         if (reader != null && reader.HasRows && reader.Read())
                         {
                             result.Record = MssqlDbHelper.AutoFillModel<M>(reader, modelT, _dbMappingHandler, resolveResult.SqlSelectFields);
+
                             //释放资源，关闭连结
                             MssqlDbHelper.DisposeReader(reader);
                         }
