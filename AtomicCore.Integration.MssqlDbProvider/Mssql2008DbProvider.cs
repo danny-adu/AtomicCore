@@ -158,7 +158,7 @@ namespace AtomicCore.Integration.MssqlDbProvider
             sqlBuilder.Append(");");
             sqlBuilder.Append("select SCOPE_IDENTITY();");
 
-            //初始化Debug
+            // 初始化Debug
             result.DebugInit(sqlBuilder, MssqlGrammarRule.C_ParamChar, parameters.ToArray());
 
             #endregion
@@ -426,7 +426,7 @@ namespace AtomicCore.Integration.MssqlDbProvider
             }
             sqlBuilder.Append(";");
 
-            //初始化Debug
+            // 初始化Debug
             result.DebugInit(sqlBuilder, MssqlGrammarRule.C_ParamChar, parameters.ToArray());
 
             #endregion
@@ -479,25 +479,19 @@ namespace AtomicCore.Integration.MssqlDbProvider
         public DbNonRecord Update(Expression<Func<M, bool>> whereExp, M model, string suffix = null)
         {
             DbNonRecord result = new DbNonRecord();
-
-            string dbString = this._dbConnectionStringHandler.GetConnection();
-            if (string.IsNullOrEmpty(dbString))
-                throw new Exception("dbString is null");
-
-            Type modelT = typeof(M);
-            Mssql2008WhereScriptResult whereResult = null;
-
-            #region 验证需要被修改的实体是否为null
-
             if (model == null)
             {
                 result.AppendError("修改数据时候的Model为空");
                 return result;
             }
 
-            #endregion
+            string dbString = this._dbConnectionStringHandler.GetConnection();
+            if (string.IsNullOrEmpty(dbString))
+                throw new Exception("dbString is null");
 
             #region 解析where条件
+
+            Mssql2008WhereScriptResult whereResult = null;
 
             //允许null，即不设置任何条件
             if (whereExp != null)
@@ -533,6 +527,9 @@ namespace AtomicCore.Integration.MssqlDbProvider
 
             #region 开始拼接Sql语句
 
+            Type modelT = typeof(M);
+
+            // 获取所有非自增长列
             DbColumnAttribute[] columns = this._dbMappingHandler.GetDbColumnCollection(modelT, d => !d.IsDbGenerated);
 
             // 获取当前表或试图名
@@ -540,31 +537,28 @@ namespace AtomicCore.Integration.MssqlDbProvider
             if (!string.IsNullOrEmpty(suffix))
                 tableName = $"{tableName}{suffix}";
 
+            // 参数定义
             List<DbParameter> parameters = new List<DbParameter>();
             DbParameter cur_parameter = null;
+
+            // 开始拼接
             StringBuilder sqlBuilder = new StringBuilder("update ");
-            sqlBuilder.Append("[");
-            sqlBuilder.Append(tableName);
-            sqlBuilder.Append("]");
+            sqlBuilder.Append(MssqlGrammarRule.GenerateTableWrapped(tableName));
             sqlBuilder.Append(" set ");
             foreach (var item in columns)
             {
                 PropertyInfo p = modelT.GetProperty(item.PropertyNameMapping);
                 if (p != null)
                 {
-                    string parameterName = string.Format("set_{0}", item.DbColumnName);
                     object parameterVal = p.GetValue(model, null);
 
-                    sqlBuilder.Append("[");
-                    sqlBuilder.Append(item.DbColumnName);
-                    sqlBuilder.Append("]");
-                    sqlBuilder.Append("=");
-                    sqlBuilder.Append("@");
-                    sqlBuilder.Append(parameterName);
-                    sqlBuilder.Append(",");
-
-                    cur_parameter = new SqlParameter(MssqlGrammarRule.GenerateParamName(parameterName), parameterVal);
+                    // 生成参数名称, eg: @name
+                    string parameterName = MssqlGrammarRule.GenerateParamName(item.DbColumnName);
+                    cur_parameter = new SqlParameter(parameterName, parameterVal);
                     parameters.Add(cur_parameter);
+
+                    // 拼接语句
+                    sqlBuilder.Append($"{MssqlGrammarRule.GenerateFieldWrapped(item.DbColumnName)}={parameterName},");
                 }
             }
             sqlBuilder.Replace(",", " ", sqlBuilder.Length - 1, 1);
@@ -579,7 +573,8 @@ namespace AtomicCore.Integration.MssqlDbProvider
                 }
             }
             sqlBuilder.Append(";");
-            //初始化Debug
+
+            // 初始化Debug
             result.DebugInit(sqlBuilder, MssqlGrammarRule.C_ParamChar, parameters.ToArray());
 
             #endregion
