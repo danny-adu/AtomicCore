@@ -1096,14 +1096,9 @@ namespace AtomicCore.Integration.MssqlDbProvider
                 return result;
             }
 
-            Mssql2008SentenceResult resolveResult = null;
-            List<DbParameter> parameters = new List<DbParameter>();
-            DbParameter cur_parameter = null;
-            int currentPage = 0;
-            int pageSize = 0;
-
             #region 解析表达式条件
 
+            Mssql2008SentenceResult resolveResult = null;
             if (exp != null)
             {
                 resolveResult = Mssql2008SentenceHandler.ExecuteResolver(exp, this._dbMappingHandler);
@@ -1118,12 +1113,20 @@ namespace AtomicCore.Integration.MssqlDbProvider
 
             #region 拼接SQL语句
 
+            int currentPage = 0;
+            int pageSize = 0;
+
             // 获取当前表或试图名
             string tableName = this._dbMappingHandler.GetDbTableName(modelT);
             if (!string.IsNullOrEmpty(suffix))
                 tableName = $"{tableName}{suffix}";
 
+            // 指示是否需要2次SQL查询统计数量
             bool count_from_list = false;
+
+            List<DbParameter> parameters = new List<DbParameter>();
+            DbParameter cur_parameter = null;
+
             StringBuilder countBuilder = new StringBuilder();
             StringBuilder queryBuilder = new StringBuilder("select ");
 
@@ -1393,7 +1396,7 @@ namespace AtomicCore.Integration.MssqlDbProvider
                 #endregion
             }
 
-            //初始化Debug
+            // 初始化Debug
             var debugBuilder = new StringBuilder();
             if (countBuilder.Length > 0)
                 debugBuilder.Append(countBuilder);
