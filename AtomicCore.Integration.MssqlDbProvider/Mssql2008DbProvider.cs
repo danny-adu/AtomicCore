@@ -1224,9 +1224,10 @@ namespace AtomicCore.Integration.MssqlDbProvider
 
                 #region 拼接构造查询语句
 
-                //第一页起始数据
                 if (currentPage == 1)
                 {
+                    //第一页起始数据
+
                     #region 设置头N条数据
 
                     if (pageSize < int.MaxValue)
@@ -1291,12 +1292,16 @@ namespace AtomicCore.Integration.MssqlDbProvider
 
                     #endregion
                 }
-                //第N页数据
                 else
                 {
-                    // 准备开始拼接开窗函数
+                    //第N页数据
+
+                    #region 准备开始拼接开窗函数
+
                     queryBuilder.Append(" * from (");
                     queryBuilder.Append("select row_number() over (order by ");
+
+                    #endregion
 
                     #region 指定排序
 
@@ -1305,12 +1310,8 @@ namespace AtomicCore.Integration.MssqlDbProvider
                         //设置主键倒序排序
                         IEnumerable<string> pks = columns.Where(d => d.IsDbPrimaryKey).Select(d => d.DbColumnName);
                         foreach (var item in pks)
-                        {
-                            queryBuilder.Append("[");
-                            queryBuilder.Append(item);
-                            queryBuilder.Append("]");
-                            queryBuilder.Append(" desc,");
-                        }
+                            queryBuilder.Append($"{MssqlGrammarRule.GenerateFieldWrapped(item)} desc,");
+
                         queryBuilder.Replace(",", "", queryBuilder.Length - 1, 1);
                     }
                     else
@@ -1333,30 +1334,22 @@ namespace AtomicCore.Integration.MssqlDbProvider
                                 IsModelProperty = true
                             });
                     }
+
+                    // 拼接查询字段
                     foreach (var item in resolveResult.SqlSelectFields)
                     {
                         if (item.IsModelProperty)
-                        {
-                            queryBuilder.Append("[");
-                            queryBuilder.Append(item.DBSelectFragment);
-                            queryBuilder.Append("]");
-                            queryBuilder.Append(" as ");
-                            queryBuilder.Append("[");
-                            queryBuilder.Append(item.DBFieldAsName);
-                            queryBuilder.Append("]");
-                            queryBuilder.Append(",");
-                        }
+                            queryBuilder.Append($"{MssqlGrammarRule.GenerateFieldWrapped(item.DBSelectFragment)},");
+                        else
+                            queryBuilder.Append($"{MssqlGrammarRule.GenerateFieldWrapped(item.DBSelectFragment)} as {MssqlGrammarRule.GenerateFieldWrapped(item.DBFieldAsName)},");
                     }
-                    queryBuilder.Replace(",", "", queryBuilder.Length - 1, 1);
+                    queryBuilder.Replace(",", string.Empty, queryBuilder.Length - 1, 1);
 
                     #endregion
 
                     #region 指定查询的表
 
-                    queryBuilder.Append(" from ");
-                    queryBuilder.Append("[");
-                    queryBuilder.Append(tableName);
-                    queryBuilder.Append("]");
+                    queryBuilder.Append($" from {MssqlGrammarRule.GenerateTableWrapped(tableName)}");
 
                     #endregion
 
@@ -1411,7 +1404,6 @@ namespace AtomicCore.Integration.MssqlDbProvider
                     if (parameters.Count > 0)
                         foreach (var item in parameters)
                             command.Parameters.Add(item);
-
 
                     //尝试打开数据库链接
                     if (MssqlDbHelper.TryOpenDbConnection(connection, ref result))
