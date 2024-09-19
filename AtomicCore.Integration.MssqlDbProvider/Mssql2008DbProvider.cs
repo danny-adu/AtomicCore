@@ -1163,12 +1163,20 @@ namespace AtomicCore.Integration.MssqlDbProvider
                 #region 拼接构造查询语句(是否需要加载top关键字)
 
                 // 已经是默认的分页索引和页码
-                queryBuilder.Append(" top ");
-                queryBuilder.Append(pageSize);
-                queryBuilder.Append(" * from ");
-                queryBuilder.Append("[");
-                queryBuilder.Append(tableName);
-                queryBuilder.Append("]");
+                queryBuilder.Append($" top {pageSize} ");
+
+                // 拼接查询字段
+                foreach (var item in resolveResult.SqlSelectFields)
+                {
+                    if (item.IsModelProperty)
+                        queryBuilder.Append($"{MssqlGrammarRule.GenerateFieldWrapped(item.DBSelectFragment)},");
+                    else
+                        queryBuilder.Append($"{MssqlGrammarRule.GenerateFieldWrapped(item.DBSelectFragment)} as {MssqlGrammarRule.GenerateFieldWrapped(item.DBFieldAsName)},");
+                }
+                queryBuilder.Replace(",", string.Empty, queryBuilder.Length - 1, 1);
+
+                queryBuilder.Append(" from ");
+                queryBuilder.Append(MssqlGrammarRule.GenerateTableWrapped(tableName));
                 queryBuilder.Append(";");
 
                 #endregion
@@ -1201,10 +1209,7 @@ namespace AtomicCore.Integration.MssqlDbProvider
 
                 if (enablePaging)
                 {
-                    countBuilder.Append("select count(1) from ");
-                    countBuilder.Append("[");
-                    countBuilder.Append(tableName);
-                    countBuilder.Append("] ");
+                    countBuilder.Append($"select count(1) from {MssqlGrammarRule.GenerateTableWrapped(tableName)}");
                     if (!string.IsNullOrEmpty(resolveResult.SqlWhereConditionText))
                     {
                         countBuilder.Append(" where ");
@@ -1225,11 +1230,7 @@ namespace AtomicCore.Integration.MssqlDbProvider
                     #region 设置头N条数据
 
                     if (pageSize < int.MaxValue)
-                    {
-                        queryBuilder.Append(" top ");
-                        queryBuilder.Append(pageSize);
-                        queryBuilder.Append(" ");
-                    }
+                        queryBuilder.Append($" top {pageSize} ");
 
                     #endregion
 
@@ -1246,25 +1247,19 @@ namespace AtomicCore.Integration.MssqlDbProvider
                                 IsModelProperty = true
                             });
                     }
+
+                    // 拼接查询字段
                     foreach (var item in resolveResult.SqlSelectFields)
                     {
                         if (item.IsModelProperty)
-                        {
-                            queryBuilder.Append("[");
-                            queryBuilder.Append(item.DBSelectFragment);
-                            queryBuilder.Append("]");
-                            queryBuilder.Append(" as ");
-                            queryBuilder.Append("[");
-                            queryBuilder.Append(item.DBFieldAsName);
-                            queryBuilder.Append("]");
-                            queryBuilder.Append(",");
-                        }
+                            queryBuilder.Append($"{MssqlGrammarRule.GenerateFieldWrapped(item.DBSelectFragment)},");
+                        else
+                            queryBuilder.Append($"{MssqlGrammarRule.GenerateFieldWrapped(item.DBSelectFragment)} as {MssqlGrammarRule.GenerateFieldWrapped(item.DBFieldAsName)},");
                     }
-                    queryBuilder.Replace(",", "", queryBuilder.Length - 1, 1);
+                    queryBuilder.Replace(",", string.Empty, queryBuilder.Length - 1, 1);
+
                     queryBuilder.Append(" from ");
-                    queryBuilder.Append("[");
-                    queryBuilder.Append(tableName);
-                    queryBuilder.Append("] ");
+                    queryBuilder.Append(MssqlGrammarRule.GenerateTableWrapped(tableName));
 
                     #endregion
 
