@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.1</TargetFramework>
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+		<Description>rocketmq client</Description>
+		<Copyright>Copyright 2019</Copyright>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<Authors>th0646894062@gmail.com</Authors>
+		<PackageProjectUrl>https://github.com/danny-adu/AtomicCore</PackageProjectUrl>
+		<PackageTags>Rocketmq</PackageTags>
+		<Version>5.2.0</Version>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Crc32.NET" Version="1.2.0" />
+		<PackageReference Include="Google.Protobuf" Version="3.28.2" />
+		<PackageReference Include="Grpc.Net.Client" Version="2.66.0" />
+		<PackageReference Include="Grpc.Tools" Version="2.66.0">
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1" />
+		<PackageReference Include="NLog.Extensions.Logging" Version="5.3.14" />
+		<PackageReference Include="OpenTelemetry" Version="1.9.0" />
+		<PackageReference Include="OpenTelemetry.Api" Version="1.9.0" />
+		<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.9.0" />
+		<PackageReference Include="ParallelExtensionsExtras.NetFxStandard" Version="2.1.0" />
+
+		<Protobuf Include="protos\apache\rocketmq\v2\definition.proto" ProtoRoot="protos" GrpcServices="Client" />
+		<Protobuf Include="protos\apache\rocketmq\v2\service.proto" ProtoRoot="protos" GrpcServices="Both" />
+	</ItemGroup>
+
+</Project>
