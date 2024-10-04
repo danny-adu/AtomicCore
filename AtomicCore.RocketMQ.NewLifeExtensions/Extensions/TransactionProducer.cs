@@ -95,9 +95,21 @@ namespace NewLife.RocketMQ
         /// <summary>
         /// 提交事务
         /// </summary>
+        /// <param name="transactionId"></param>
+        public void CommitTransaction(string transactionId)
+        {
+            var mq = SelectQueue();
+            var bk = GetBroker(mq.BrokerName);
+
+            CommitTransaction(transactionId, bk);
+        }
+
+        /// <summary>
+        /// 提交事务
+        /// </summary>
         /// <param name="transactionId">事务ID</param>
         /// <param name="bk">BrokerClient</param>
-        private void CommitTransaction(string transactionId, BrokerClient bk)
+        public void CommitTransaction(string transactionId, BrokerClient bk)
         {
             var header = new EndTransactionRequestHeader
             {
@@ -112,9 +124,21 @@ namespace NewLife.RocketMQ
         /// <summary>
         /// 回滚事务
         /// </summary>
+        /// <param name="transactionId"></param>
+        public void RollbackTransaction(string transactionId)
+        {
+            var mq = SelectQueue();
+            var bk = GetBroker(mq.BrokerName);
+
+            RollbackTransaction(transactionId, bk);
+        }
+
+        /// <summary>
+        /// 回滚事务
+        /// </summary>
         /// <param name="transactionId">事务ID</param>
         /// <param name="bk">BrokerClient</param>
-        private void RollbackTransaction(string transactionId, BrokerClient bk)
+        public void RollbackTransaction(string transactionId, BrokerClient bk)
         {
             var header = new EndTransactionRequestHeader
             {
@@ -131,7 +155,7 @@ namespace NewLife.RocketMQ
         /// </summary>
         /// <param name="message"></param>
         /// <returns></returns>
-        private SendMessageRequestHeader CreateTransactionHeader(Message message)
+        public SendMessageRequestHeader CreateTransactionHeader(Message message)
         {
             return new SendMessageRequestHeader
             {

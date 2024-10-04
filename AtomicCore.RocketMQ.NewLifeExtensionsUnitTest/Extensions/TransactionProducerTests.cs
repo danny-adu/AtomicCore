@@ -1,4 +1,6 @@
-﻿using NewLife.RocketMQ.Protocol;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NewLife.RocketMQ;
+using NewLife.RocketMQ.Protocol;
 using System.Text;
 
 namespace NewLife.RocketMQ.Tests
@@ -42,6 +44,32 @@ namespace NewLife.RocketMQ.Tests
             });
 
             Assert.IsTrue(result.MsgId != null);
+        }
+
+        [TestMethod()]
+        public void CommitTransactionTest()
+        {
+            // 创建生产者实例
+            var producer = new NewLife.RocketMQ.TransactionProducer
+            {
+                // 指定 NameServer 地址
+                NameServerAddress = rocketServer,
+
+                // 设置生成者所属的组名
+                Group = "producer_group",
+
+                //// 设置要订阅的 Topic
+                Topic = topic,
+
+
+            };
+
+            // 启动生产者
+            producer.Start();
+
+            producer.CommitTransaction("AC1800030018723279CF1144938D000A");
+
+            Assert.Fail();
         }
     }
 }
