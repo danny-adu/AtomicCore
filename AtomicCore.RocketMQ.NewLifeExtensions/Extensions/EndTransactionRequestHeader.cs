@@ -7,13 +7,20 @@ namespace NewLife.RocketMQ
     /// </summary>
     public class EndTransactionRequestHeader
     {
-        /// <summary>事务ID</summary>
+        /// <summary>
+        /// 事务ID
+        /// </summary>
         public string TransactionId { get; set; }
 
-        /// <summary>提交或回滚的标志，0为提交，1为回滚</summary>
+        /// <summary>
+        /// 提交或回滚的标志，0为提交，1为回滚
+        /// </summary>
         public int CommitOrRollback { get; set; }
 
-        /// <summary>转换为属性字典</summary>
+        /// <summary>
+        /// 转换为属性字典
+        /// </summary>
+        /// <returns></returns>
         public IDictionary<string, string> GetProperties()
         {
             return new Dictionary<string, string>

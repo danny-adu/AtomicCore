@@ -10,12 +10,17 @@ namespace NewLife.RocketMQ
     public class TransactionProducer : Producer
     {
         /// <summary>
+        /// DefaultTopic
+        /// </summary>
+        const string DEFAULTTOPIC = "TBW102";
+
+        /// <summary>
         /// 发送事务消息（半消息）
         /// </summary>
         /// <param name="message"></param>
         /// <param name="localTransaction"></param>
         /// <returns></returns>
-        public SendResult PublishWithTransaction(Message message, Func<bool> localTransaction)
+        public ExtendedSendResult PublishWithTransaction(Message message, Func<bool> localTransaction)
         {
             // 构造事务消息的请求头
             var header = CreateTransactionHeader(message);
@@ -48,14 +53,14 @@ namespace NewLife.RocketMQ
                     // 提交或回滚事务
                     if (success)
                     {
-                        CommitTransaction(transactionId);
+                        CommitTransaction(transactionId, bk);
                     }
                     else
                     {
-                        RollbackTransaction(transactionId);
+                        RollbackTransaction(transactionId, bk);
                     }
 
-                    return new SendResult
+                    return new ExtendedSendResult
                     {
                         Queue = mq,
                         Header = rs.Header,
@@ -72,18 +77,27 @@ namespace NewLife.RocketMQ
                     }
 
                     span?.SetError(ex, message);
-                    throw;
+                    return new ExtendedSendResult
+                    {
+                        Status = SendStatus.SendError,
+                        ErrorMessage = ex.Message
+                    };
                 }
             }
 
-            return null;
+            return new ExtendedSendResult
+            {
+                Status = SendStatus.SendError,
+                ErrorMessage = "All retries failed"
+            };
         }
 
         /// <summary>
         /// 提交事务
         /// </summary>
-        /// <param name="transactionId"></param>
-        private void CommitTransaction(string transactionId)
+        /// <param name="transactionId">事务ID</param>
+        /// <param name="bk">BrokerClient</param>
+        private void CommitTransaction(string transactionId, BrokerClient bk)
         {
             var header = new EndTransactionRequestHeader
             {
@@ -92,15 +106,15 @@ namespace NewLife.RocketMQ
             };
 
             // 向Broker发送提交事务的请求
-            var bk = GetBroker("broker-name");  // 使用实际的broker名称
             bk.Invoke(RequestCode.END_TRANSACTION, null, header.GetProperties(), false);
         }
 
         /// <summary>
         /// 回滚事务
         /// </summary>
-        /// <param name="transactionId"></param>
-        private void RollbackTransaction(string transactionId)
+        /// <param name="transactionId">事务ID</param>
+        /// <param name="bk">BrokerClient</param>
+        private void RollbackTransaction(string transactionId, BrokerClient bk)
         {
             var header = new EndTransactionRequestHeader
             {
@@ -109,7 +123,6 @@ namespace NewLife.RocketMQ
             };
 
             // 向Broker发送回滚事务的请求
-            var bk = GetBroker("broker-name");  // 使用实际的broker名称
             bk.Invoke(RequestCode.END_TRANSACTION, null, header.GetProperties(), false);
         }
 
@@ -130,7 +143,7 @@ namespace NewLife.RocketMQ
                 Properties = message.GetProperties(),
                 ReconsumeTimes = 0,
                 UnitMode = UnitMode,
-                DefaultTopic = "TBW102"
+                DefaultTopic = DEFAULTTOPIC
             };
         }
     }

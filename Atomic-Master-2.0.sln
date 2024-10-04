@@ -83,6 +83,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AtomicCore.Rocketmq.ClientU
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AtomicCore.RocketMQ.NewLifeExtensions", "AtomicCore.RocketMQ.NewLifeExtensions\AtomicCore.RocketMQ.NewLifeExtensions.csproj", "{8D660FF6-965C-4BD0-A27F-32399E909E03}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AtomicCore.RocketMQ.NewLifeExtensionsUnitTest", "AtomicCore.RocketMQ.NewLifeExtensionsUnitTest\AtomicCore.RocketMQ.NewLifeExtensionsUnitTest.csproj", "{EBF54CD2-7756-4486-B8A9-C57724A479C3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -221,6 +223,10 @@ Global
 		{8D660FF6-965C-4BD0-A27F-32399E909E03}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8D660FF6-965C-4BD0-A27F-32399E909E03}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8D660FF6-965C-4BD0-A27F-32399E909E03}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EBF54CD2-7756-4486-B8A9-C57724A479C3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EBF54CD2-7756-4486-B8A9-C57724A479C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EBF54CD2-7756-4486-B8A9-C57724A479C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EBF54CD2-7756-4486-B8A9-C57724A479C3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -259,6 +265,7 @@ Global
 		{EA8165CE-6420-4193-B8F0-0A7EAC2A8FA0} = {E4ABFAFE-A95F-4290-A845-D36318F93D44}
 		{3880FBB7-0BCA-4014-8A03-26EF40D98FB8} = {35F57B42-FA48-4D50-8B93-C0C49BA67BD2}
 		{8D660FF6-965C-4BD0-A27F-32399E909E03} = {E4ABFAFE-A95F-4290-A845-D36318F93D44}
+		{EBF54CD2-7756-4486-B8A9-C57724A479C3} = {35F57B42-FA48-4D50-8B93-C0C49BA67BD2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {942DB662-B41D-4454-8FF9-2F118FA2B541}
